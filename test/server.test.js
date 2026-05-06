@@ -35,6 +35,23 @@ test("serves health and analysis API", async () => {
   }
 });
 
+test("serves text metadata with explicit content types", async () => {
+  const server = createServer();
+  const baseUrl = await listen(server);
+
+  try {
+    const privacy = await fetch(`${baseUrl}/privacy.txt`);
+    assert.equal(privacy.status, 200);
+    assert.match(privacy.headers.get("content-type"), /text\/plain/);
+
+    const sitemap = await fetch(`${baseUrl}/sitemap.xml`);
+    assert.equal(sitemap.status, 200);
+    assert.match(sitemap.headers.get("content-type"), /application\/xml/);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test("rejects invalid JSON", async () => {
   const server = createServer();
   const baseUrl = await listen(server);
