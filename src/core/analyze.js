@@ -61,6 +61,12 @@ const ID_PATTERNS = [
   ["opaque token", /\b(?:token|key|secret|code|invite|cursor)\s*[:=]\s*["']?[A-Za-z0-9_.\-]{12,}/gi]
 ];
 
+const SECRET_PATTERNS = [
+  ["private key block", /-----BEGIN [A-Z ]*PRIVATE KEY-----/i],
+  ["provider token", /\b(?:gh[pousr]_|sk-[A-Za-z0-9]|xox[baprs]-|rnd_[A-Za-z0-9]+|col_[A-Za-z0-9_-]+|AKIA[0-9A-Z]{16})/i],
+  ["authorization header", /\bauthorization\s*:\s*bearer\s+[A-Za-z0-9._-]{12,}/i]
+];
+
 function cleanText(value, maxLength = 60000) {
   if (typeof value !== "string") return "";
   return value.replace(/\0/g, "").slice(0, maxLength).trim();
@@ -112,6 +118,82 @@ function detectSurfaces(text) {
 function detectIdentifiers(text) {
   return ID_PATTERNS.map(([type, pattern]) => ({ type, count: countMatches(text, pattern) }))
     .filter((item) => item.count > 0);
+}
+
+function evaluateIntake(text, hasUserInput) {
+  if (!hasUserInput) {
+    return {
+      accepted: true,
+      status: "demo",
+      score: 4,
+      errors: [],
+      warnings: ["Demo plan generated from default scope. Add concrete roles, objects, routes, and safety rules before relying on it."]
+    };
+  }
+
+  const errors = [];
+  const warnings = [];
+  const lower = text.toLowerCase();
+  const hasRoleSection = /\broles?\s*:/i.test(text) || ROLE_HINTS.some(([, pattern]) => pattern.test(text));
+  const hasObjectSection = /\bobjects?\s*:/i.test(text) || OBJECT_HINTS.some((item) => lower.includes(item));
+  const hasRouteSection = /\broutes?\s*:/i.test(text) || extractUrls(text).length > 0 || extractPaths(text).length > 0;
+  const hasSafetyBoundary = /\b(out of scope|safe[- ]?harbor|authorized|authorization|owned accounts?|owned objects?|rate limits?)\b/i.test(text);
+  const hasReviewGoal = /\b(goal|check|review|audit|triage|test|verify|validate|suspicious flows?)\b/i.test(text);
+  const secretHit = SECRET_PATTERNS.find(([, pattern]) => pattern.test(text));
+
+  if (secretHit) {
+    errors.push(`Secret-like material detected (${secretHit[0]}). Remove credentials before analysis.`);
+  }
+
+  const score = [hasRoleSection, hasObjectSection, hasRouteSection, hasSafetyBoundary, hasReviewGoal]
+    .filter(Boolean).length;
+
+  if (score < 3) {
+    errors.push("Input is too ambiguous. Provide at least roles, objects, routes or surfaces, and authorization/safety rules.");
+  }
+
+  if (!hasSafetyBoundary) warnings.push("Add explicit authorization and out-of-scope rules.");
+  if (!hasRouteSection) warnings.push("Add route, API, UI, workflow, or interface hints.");
+  if (!hasReviewGoal) warnings.push("Add a concrete review goal or suspicious workflow.");
+
+  return {
+    accepted: errors.length === 0,
+    status: errors.length === 0 ? "accepted" : "rejected",
+    score,
+    errors,
+    warnings
+  };
+}
+
+function buildRejectedPlan(intake) {
+  const queue = [
+    {
+      title: "Fix intake before generating a review plan.",
+      bugClass: "intake validation",
+      boundary: "scope quality x safety constraints",
+      method: "Provide roles, objects, routes or surfaces, authorization rules, and a concrete review goal. Remove secrets."
+    }
+  ];
+
+  const reportMarkdown = [
+    "# Intake Rejected",
+    "",
+    "SignalForge did not generate a security review plan because the submitted scope was unsafe or too ambiguous.",
+    "",
+    "## Errors",
+    "",
+    ...intake.errors.map((error) => `- ${error}`),
+    "",
+    "## Required Shape",
+    "",
+    "- Roles: user types and privilege boundaries.",
+    "- Objects: records or resources being protected.",
+    "- Routes or surfaces: API paths, UI flows, GraphQL, files, exports, tools, jobs, or agents.",
+    "- Authorization and safety rules: owned accounts, out-of-scope actions, rate limits, safe-harbor notes.",
+    "- Review goal: the boundary or workflow you want pressure-tested."
+  ].join("\n");
+
+  return { queue, reportMarkdown };
 }
 
 function priorityFor(surface, action, object) {
@@ -284,7 +366,9 @@ export function analyzeScope(input = {}) {
   const scopeText = cleanText(input.scopeText);
   const notes = cleanText(input.notes, 20000);
   const text = `${scopeText}\n${notes}`.trim();
+  const hasUserInput = text.length > 0;
   const source = text || "generic multi-tenant web application with anonymous, basic user, privileged user, admin, service account, API, users, files, invites, exports, and admin workflows";
+  const intake = evaluateIntake(source, hasUserInput);
 
   const urls = extractUrls(source);
   const paths = extractPaths(source);
@@ -303,6 +387,25 @@ export function analyzeScope(input = {}) {
     routes: unique([...urls, ...paths]).slice(0, 50)
   };
 
+  if (!intake.accepted) {
+    const rejected = buildRejectedPlan(intake);
+    return {
+      generatedAt: new Date().toISOString(),
+      inputStats: {
+        characters: source.length,
+        urls: urls.length,
+        paths: paths.length,
+        identifierKinds: identifiers.length
+      },
+      intake,
+      model,
+      matrix: [],
+      queue: rejected.queue,
+      reportSkeleton: rejected.reportMarkdown,
+      reportMarkdown: rejected.reportMarkdown
+    };
+  }
+
   const matrix = buildMatrix(roles, objects, actions, surfaces);
   const queue = buildQueue(model, paths, urls);
   const reportSkeleton = buildReportSkeleton(model, queue);
@@ -316,6 +419,7 @@ export function analyzeScope(input = {}) {
       paths: paths.length,
       identifierKinds: identifiers.length
     },
+    intake,
     model,
     matrix,
     queue,

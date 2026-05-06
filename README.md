@@ -12,6 +12,8 @@ https://signalforge-lab.onrender.com
 
 Sample output: [docs/sample-review-plan.md](docs/sample-review-plan.md)
 
+Intake template: [docs/intake-template.md](docs/intake-template.md)
+
 Pilot contract: [ops/pilot-contract.md](ops/pilot-contract.md)
 
 ## Boundaries

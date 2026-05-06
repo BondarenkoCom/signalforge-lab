@@ -57,6 +57,7 @@ function escapeHtml(value) {
 
 function renderSummary(data) {
   const metrics = [
+    ["intake", data.intake?.status || "unknown"],
     ["roles", data.model.roles.length],
     ["objects", data.model.objects.length],
     ["surfaces", data.model.surfaces.length],
@@ -72,7 +73,15 @@ function renderSummary(data) {
 }
 
 function renderQueue(data) {
-  queue.innerHTML = data.queue.map((item) => `
+  const intakeItems = data.intake?.errors?.length || data.intake?.warnings?.length
+    ? `<article class="item intake ${data.intake.accepted ? "" : "is-rejected"}">
+        <span class="badge">${escapeHtml(data.intake.status)}</span>
+        ${data.intake.errors.map((error) => `<p><strong>Error:</strong> ${escapeHtml(error)}</p>`).join("")}
+        ${data.intake.warnings.map((warning) => `<p><strong>Warning:</strong> ${escapeHtml(warning)}</p>`).join("")}
+      </article>`
+    : "";
+
+  queue.innerHTML = intakeItems + data.queue.map((item) => `
     <article class="item">
       <span class="badge">${escapeHtml(item.bugClass)}</span>
       <h2>${escapeHtml(item.title)}</h2>

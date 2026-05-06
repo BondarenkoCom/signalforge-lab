@@ -173,7 +173,7 @@ h1 {
 
 .summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   padding: 12px;
   border-bottom: 1px solid var(--line);
@@ -215,6 +215,10 @@ h1 {
 .item {
   padding: 12px;
   margin-bottom: 10px;
+}
+
+.item.is-rejected {
+  border-color: var(--red);
 }
 
 .item h2 {
