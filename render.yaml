@@ -2,8 +2,13 @@ services:
   - type: web
     name: signalforge-lab
     runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    repo: https://github.com/BondarenkoCom/signalforge-lab
     buildCommand: npm test
     startCommand: npm start
+    healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
         value: 24
