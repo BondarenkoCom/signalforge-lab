@@ -37,3 +37,9 @@ The issue becomes reportable only if a disallowed identity can read, change, exp
 - Compare one allowed request and one disallowed request.
 - Stop before accessing third-party data or making destructive state changes.
 - Keep the smallest request/response diff that proves the failed boundary.
+
+## Pilot Shapes
+
+- Free sanity check: one scope note, one high-level queue, no private target details.
+- Paid quick triage: focused first-pass matrix and two or three highest-signal checks.
+- Paid review plan: fuller control model, prioritized test plan, and report skeleton.

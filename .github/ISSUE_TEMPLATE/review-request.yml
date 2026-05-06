@@ -42,8 +42,8 @@ body:
       label: Pilot size
       options:
         - Free sanity check
-        - Paid quick triage
-        - Paid review plan
+        - Paid quick triage ($49-$99)
+        - Paid review plan ($150-$300)
         - Custom
     validations:
       required: true
