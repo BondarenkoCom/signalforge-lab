@@ -7,6 +7,16 @@ const repo = "BondarenkoCom/signalforge-lab";
 const liveUrl = "https://signalforge-lab.onrender.com";
 const serviceId = "srv-d7tdljbeo5us73b9dfj0";
 const renderKeyPath = "C:\\Users\\Honor\\.claude\\projects\\C--Users-Honor\\memory\\reference_render.md";
+const colonyPosts = [
+  {
+    label: "agent-economy",
+    id: "a3c9487e-ca51-4696-8cea-a2477fa27d31"
+  },
+  {
+    label: "product-review",
+    id: "12ed1436-f930-44a9-ac56-5a9031d07c9e"
+  }
+];
 
 async function gh(args) {
   const { stdout } = await execFileAsync("gh", args, { maxBuffer: 1024 * 1024 });
@@ -42,11 +52,33 @@ async function getHealth() {
   return { status: response.status, ok: body.ok === true };
 }
 
-const [runs, issues, deploy, health] = await Promise.all([
+async function getColonyPost(post) {
+  const [detailsResponse, commentsResponse] = await Promise.all([
+    fetch(`https://thecolony.cc/api/v1/posts/${post.id}`),
+    fetch(`https://thecolony.cc/api/v1/posts/${post.id}/comments`)
+  ]);
+
+  const details = detailsResponse.ok ? await detailsResponse.json() : {};
+  const commentsRaw = commentsResponse.ok ? await commentsResponse.json() : {};
+  const comments = commentsRaw.items || commentsRaw.comments || (Array.isArray(commentsRaw) ? commentsRaw : []);
+
+  return {
+    label: post.label,
+    id: post.id,
+    title: details.title || "unknown",
+    status: details.status || "unknown",
+    comments: comments.length,
+    latestCommentAt: comments[0]?.created_at || null,
+    url: `https://thecolony.cc/post/${post.id}`
+  };
+}
+
+const [runs, issues, deploy, health, colony] = await Promise.all([
   gh(["run", "list", "--repo", repo, "--limit", "1", "--json", "headSha,status,conclusion,url"]),
   gh(["issue", "list", "--repo", repo, "--limit", "10", "--json", "number,title,state,createdAt,url"]),
   getLatestDeploy(),
-  getHealth()
+  getHealth(),
+  Promise.all(colonyPosts.map(getColonyPost))
 ]);
 
 const latestRun = runs[0] || {};
@@ -64,5 +96,6 @@ console.log(JSON.stringify({
   render: deploy,
   health,
   openIssues: issues.filter((issue) => issue.state === "OPEN").length,
-  issues: issues.slice(0, 5)
+  issues: issues.slice(0, 5),
+  colony
 }, null, 2));

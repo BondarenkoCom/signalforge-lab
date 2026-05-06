@@ -31,6 +31,8 @@ npm start
 npm run status
 ```
 
+`npm run status` checks only this isolated repo, its Render service, live health, and the two SignalForge Colony posts.
+
 Default local URL:
 
 ```text
