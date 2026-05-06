@@ -12,6 +12,8 @@ https://signalforge-lab.onrender.com
 
 Sample output: [docs/sample-review-plan.md](docs/sample-review-plan.md)
 
+Pilot contract: [ops/pilot-contract.md](ops/pilot-contract.md)
+
 ## Boundaries
 
 - Runs inside `D:\aya-9x-lab\signalforge`.
