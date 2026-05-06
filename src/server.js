@@ -1,5 +1,5 @@
 import { createServer as createHttpServer } from "node:http";
-import { appendFile, readFile, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,7 +8,6 @@ import { analyzeScope } from "./core/analyze.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
 const publicDir = path.join(projectRoot, "public");
-const dataDir = path.join(projectRoot, "data");
 const PORT = Number.parseInt(process.env.PORT || "4177", 10);
 const HOST = process.env.RENDER ? "0.0.0.0" : "127.0.0.1";
 const BODY_LIMIT_BYTES = 128 * 1024;
@@ -112,42 +111,6 @@ async function readJson(req) {
   }
 }
 
-function safeContact(value) {
-  if (typeof value !== "string") return "";
-  return value.trim().slice(0, 180);
-}
-
-async function handleLead(req, res) {
-  const body = await readJson(req);
-  const contact = safeContact(body.contact);
-  const note = safeContact(body.note);
-
-  if (!contact || contact.length < 3) {
-    sendJson(res, 400, { error: "contact_required" });
-    return;
-  }
-
-  const entry = {
-    createdAt: new Date().toISOString(),
-    contact,
-    note,
-    source: safeContact(body.source || "web")
-  };
-
-  const line = `${JSON.stringify(entry)}\n`;
-  await appendFile(path.join(dataDir, "leads.jsonl"), line, "utf8");
-
-  if (process.env.LEAD_WEBHOOK_URL) {
-    fetch(process.env.LEAD_WEBHOOK_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(entry)
-    }).catch(() => {});
-  }
-
-  sendJson(res, 202, { ok: true, id: Buffer.from(entry.createdAt).toString("base64url") });
-}
-
 async function serveStatic(req, res) {
   const url = new URL(req.url || "/", "http://127.0.0.1");
   const requested = url.pathname === "/" ? "/index.html" : url.pathname;
@@ -198,13 +161,13 @@ export function createServer() {
         return;
       }
 
-      if (req.method === "POST" && url.pathname === "/api/lead") {
-        await handleLead(req, res);
+      if (req.method === "GET" || req.method === "HEAD") {
+        await serveStatic(req, res);
         return;
       }
 
-      if (req.method === "GET" || req.method === "HEAD") {
-        await serveStatic(req, res);
+      if (url.pathname.startsWith("/api/")) {
+        sendJson(res, 404, { error: "api_endpoint_not_found" });
         return;
       }
 

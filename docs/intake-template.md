@@ -44,6 +44,10 @@ Returned diagnostics include:
 Current blocking errors:
 
 - Secret-like material detected, such as private keys, provider tokens, or bearer authorization headers.
+- Missing route, surface, interface, or workflow hints.
+- Missing explicit authorization and out-of-scope rules.
+- Missing concrete review goal or suspicious workflow.
+- Missing roles or protected objects.
 - Input is too ambiguous because it does not provide enough of the required shape.
 
 Current warnings:

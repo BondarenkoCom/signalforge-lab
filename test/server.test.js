@@ -22,7 +22,7 @@ test("serves health and analysis API", async () => {
     const analysisResponse = await fetch(`${baseUrl}/api/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scopeText: "admin export invoice /api/invoices/:id/export" })
+      body: JSON.stringify({ scopeText: "Roles: admin, user. Objects: invoice. Routes: /api/invoices/:id/export. Authorization: owned accounts only. Review goal: check invoice export." })
     });
     const analysis = await analysisResponse.json();
 
@@ -30,6 +30,24 @@ test("serves health and analysis API", async () => {
     assert.equal(analysis.model.objects.includes("invoice"), true);
     assert.equal(analysis.matrix.length > 0, true);
     assert.match(analysis.reportMarkdown, /SignalForge Review Plan/);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("does not expose a dead lead intake API", async () => {
+  const server = createServer();
+  const baseUrl = await listen(server);
+
+  try {
+    const response = await fetch(`${baseUrl}/api/lead`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contact: "a@b.c" })
+    });
+
+    assert.equal(response.status, 404);
+    assert.deepEqual(await response.json(), { error: "api_endpoint_not_found" });
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

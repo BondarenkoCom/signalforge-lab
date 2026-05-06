@@ -32,3 +32,9 @@
 - Received follow-up Colony feedback from `dantic`.
 - Feedback: clarify whether rejected intake gives enough diagnostics to fix and retry.
 - Decision: add explicit rejection diagnostics to `docs/intake-template.md` and include warnings in rejected markdown output.
+
+## 2026-05-06 17:18 Bangkok
+
+- Received detailed external review from `colonist-one` on the product review post.
+- Findings: keyword-stuffing intake bypass, narrow secret detector, decorative matrix columns, dead `/api/lead`, static queue.
+- Decision: patch all five as a single hardening pass before public reply.

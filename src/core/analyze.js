@@ -63,7 +63,8 @@ const ID_PATTERNS = [
 
 const SECRET_PATTERNS = [
   ["private key block", /-----BEGIN [A-Z ]*PRIVATE KEY-----/i],
-  ["provider token", /\b(?:gh[pousr]_|sk-[A-Za-z0-9]|xox[baprs]-|rnd_[A-Za-z0-9]+|col_[A-Za-z0-9_-]+|AKIA[0-9A-Z]{16})/i],
+  ["provider token", /\b(?:gh[pousr]_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{12,}|sk_(?:live|test)_[A-Za-z0-9]{12,}|xox[baprs]-[A-Za-z0-9-]{20,}|rnd_[A-Za-z0-9]+|col_[A-Za-z0-9_-]+|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{20,}|ya29\.[0-9A-Za-z_-]+|gl(?:pat|oauth|proj|rt|cbt|agent|soat)-[0-9A-Za-z_-]{10,}|npm_[0-9A-Za-z_-]{20,}|pypi-[0-9A-Za-z_-]{20,}|SG\.[0-9A-Za-z_-]+\.[0-9A-Za-z_-]+|AC[a-f0-9]{32}|SK[a-f0-9]{32})\b/i],
+  ["jwt", /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/i],
   ["authorization header", /\bauthorization\s*:\s*bearer\s+[A-Za-z0-9._-]{12,}/i]
 ];
 
@@ -99,8 +100,24 @@ function detectRoles(text) {
   return roles.length ? unique(roles) : DEFAULT_ROLES;
 }
 
+function extractLabeledSegment(text, labelPattern) {
+  const sectionPattern = "\\b(?:roles?|objects?|routes?|surfaces?|interfaces?|workflows?|authorization|safety|review goal|goal|notes?)\\s*:";
+  const pattern = new RegExp(`\\b(?:${labelPattern})\\s*:\\s*([\\s\\S]*?)(?=${sectionPattern}|$)`, "i");
+  return pattern.exec(text)?.[1] || "";
+}
+
 function detectObjects(text) {
   const lower = text.toLowerCase();
+  const explicitObjects = extractLabeledSegment(text, "objects?");
+  if (explicitObjects) {
+    const explicitLower = explicitObjects.toLowerCase();
+    const objects = OBJECT_HINTS.map((item) => ({ item, index: explicitLower.indexOf(item) }))
+      .filter(({ index }) => index >= 0)
+      .sort((a, b) => a.index - b.index)
+      .map(({ item }) => item);
+    if (objects.length) return unique(objects).slice(0, 12);
+  }
+
   const objects = OBJECT_HINTS.filter((item) => lower.includes(item));
   return objects.length ? unique(objects).slice(0, 12) : ["user", "organization", "file", "invite", "export"];
 }
@@ -136,7 +153,7 @@ function evaluateIntake(text, hasUserInput) {
   const lower = text.toLowerCase();
   const hasRoleSection = /\broles?\s*:/i.test(text) || ROLE_HINTS.some(([, pattern]) => pattern.test(text));
   const hasObjectSection = /\bobjects?\s*:/i.test(text) || OBJECT_HINTS.some((item) => lower.includes(item));
-  const hasRouteSection = /\broutes?\s*:/i.test(text) || extractUrls(text).length > 0 || extractPaths(text).length > 0;
+  const hasRouteSection = /\b(routes?|surfaces?|interfaces?|workflows?)\s*:/i.test(text) || extractUrls(text).length > 0 || extractPaths(text).length > 0;
   const hasSafetyBoundary = /\b(out of scope|safe[- ]?harbor|authorized|authorization|owned accounts?|owned objects?|rate limits?)\b/i.test(text);
   const hasReviewGoal = /\b(goal|check|review|audit|triage|test|verify|validate|suspicious flows?)\b/i.test(text);
   const secretHit = SECRET_PATTERNS.find(([, pattern]) => pattern.test(text));
@@ -148,8 +165,24 @@ function evaluateIntake(text, hasUserInput) {
   const score = [hasRoleSection, hasObjectSection, hasRouteSection, hasSafetyBoundary, hasReviewGoal]
     .filter(Boolean).length;
 
-  if (score < 3) {
-    errors.push("Input is too ambiguous. Provide at least roles, objects, routes or surfaces, and authorization/safety rules.");
+  if (!hasRouteSection) {
+    errors.push("Missing route, surface, interface, or workflow hints.");
+  }
+
+  if (!hasSafetyBoundary) {
+    errors.push("Missing explicit authorization and out-of-scope rules.");
+  }
+
+  if (!hasReviewGoal) {
+    errors.push("Missing concrete review goal or suspicious workflow.");
+  }
+
+  if (!hasRoleSection && !hasObjectSection) {
+    errors.push("Missing roles or protected objects.");
+  }
+
+  if (score < 4) {
+    errors.push("Input is too ambiguous. Provide roles or objects, routes or surfaces, authorization/safety rules, and a review goal.");
   }
 
   if (!hasSafetyBoundary) warnings.push("Add explicit authorization and out-of-scope rules.");
@@ -208,6 +241,33 @@ function priorityFor(surface, action, object) {
   return Math.min(score, 5);
 }
 
+function roleBoundaryFor(roles, object, action, surface) {
+  if (surface === "admin surface" || action === "execute") return "non-admin user vs admin/operator";
+  if (["invoice", "payment", "subscription"].includes(object)) return "member vs billing admin";
+  if (["api key", "secret", "webhook"].includes(object)) return "regular user vs workspace owner/service account";
+  if (["read", "export"].includes(action)) return "owner vs shared viewer vs outsider";
+  if (["update", "delete"].includes(action)) return "owner/editor vs viewer";
+  return roles.includes("admin") ? "non-admin user vs admin" : "owner vs non-owner";
+}
+
+function stateBoundaryFor(object, action) {
+  if (action === "delete") return "active vs archived/soft-deleted";
+  if (object === "invite") return "pending vs accepted/expired";
+  if (object === "export" || action === "export") return "generated vs expired/regenerated";
+  if (object === "invoice") return "draft vs finalized/void";
+  if (object === "file" || object === "document") return "normal vs shared/soft-deleted";
+  if (object === "agent" || object === "memory") return "enabled vs disabled/tool-attached";
+  return "draft vs active/archived";
+}
+
+function tenantBoundaryFor(object, surface) {
+  if (["organization", "workspace", "project", "team"].includes(object)) return "same workspace vs foreign workspace";
+  if (["invoice", "payment", "subscription"].includes(object)) return "same billing account vs foreign billing account";
+  if (["api key", "secret", "webhook"].includes(object)) return "same workspace integration vs foreign integration";
+  if (surface === "AI/agent surface" || ["agent", "memory", "embedding"].includes(object)) return "same memory namespace vs foreign tenant memory";
+  return "owner tenant vs foreign tenant";
+}
+
 function buildMatrix(roles, objects, actions, surfaces) {
   const selectedObjects = objects.slice(0, 8);
   const selectedActions = actions.slice(0, 6);
@@ -218,11 +278,11 @@ function buildMatrix(roles, objects, actions, surfaces) {
     for (const object of selectedObjects) {
       for (const action of selectedActions) {
         rows.push({
-          role: roles.includes("admin") ? "non-admin user vs admin" : "user A vs user B",
+          role: roleBoundaryFor(roles, object, action, surface),
           object,
           action,
-          state: action === "delete" ? "active vs archived/soft-deleted" : "normal vs shared/transferred",
-          tenant: "same tenant vs foreign tenant",
+          state: stateBoundaryFor(object, action),
+          tenant: tenantBoundaryFor(object, surface),
           interface: surface,
           priority: priorityFor(surface, action, object)
         });
@@ -234,48 +294,53 @@ function buildMatrix(roles, objects, actions, surfaces) {
 }
 
 function buildQueue(model, paths, urls) {
+  const primaryObject = model.objects[0] || "object";
+  const secondaryObject = model.objects[1] || primaryObject;
+  const primaryRoute = model.routes[0] || "the highest-risk route or workflow";
+  const privilegedSurface = model.surfaces.find((surface) => surface.includes("admin") || surface.includes("billing") || surface.includes("AI")) || model.surfaces[0] || "primary interface";
+
   const queue = [
     {
-      title: "Prove object ownership checks independently for read, update, export, and delete.",
+      title: `Prove ${primaryObject} ownership checks independently for read, update, export, and delete.`,
       bugClass: "BOLA",
-      boundary: "actor identity x object owner x action",
-      method: "Create object as account A, replay the smallest request as account B, compare status, body, and side effects."
+      boundary: `actor identity x ${primaryObject} owner x action`,
+      method: `Start with ${primaryRoute}. Create a ${primaryObject} as account A, replay the smallest request as account B, compare status, body, and side effects.`
     },
     {
-      title: "Mutate hidden ownership, role, status, billing, and callback fields.",
+      title: `Mutate hidden ownership, role, status, billing, and callback fields on ${secondaryObject}.`,
       bugClass: "BOPLA",
-      boundary: "client-provided properties x server-authoritative properties",
-      method: "Replay valid create/update requests with one extra sensitive field at a time. Prefer PATCH and bulk variants."
+      boundary: `client-provided ${secondaryObject} properties x server-authoritative properties`,
+      method: `Replay valid create/update requests for ${secondaryObject} with one extra sensitive field at a time. Prefer PATCH and bulk variants.`
     },
     {
-      title: "Probe role-only helpers that are not visibly admin routes.",
+      title: `Probe role-only helpers around ${privilegedSurface}.`,
       bugClass: "BFLA",
-      boundary: "normal role x privileged action",
-      method: "Test export, resend, approve, replay, rotate, impersonate, unlock, refund, and disable endpoints separately."
+      boundary: `normal role x privileged action on ${privilegedSurface}`,
+      method: "Test export, resend, approve, replay, rotate, impersonate, unlock, refund, and disable actions separately."
     },
     {
-      title: "Compare web, API, background, and mobile-like interfaces for the same action.",
+      title: `Compare interfaces for the same ${primaryObject} action.`,
       bugClass: "interface drift",
-      boundary: "same operation x alternate interface",
-      method: "Find where the UI blocks an action, then test the underlying endpoint and adjacent method variants directly."
+      boundary: `${primaryObject} operation x alternate interface`,
+      method: `Find where one interface blocks a ${primaryObject} action, then test the underlying endpoint and adjacent method variants directly.`
     }
   ];
 
   if (model.surfaces.includes("AI/agent surface")) {
     queue.unshift({
-      title: "Check whether untrusted retrieved content can steer tool use or leak scoped data.",
+      title: `Check whether untrusted ${primaryObject} content can steer tool use or leak scoped data.`,
       bugClass: "LLM/agent control failure",
-      boundary: "untrusted content x tool authority x tenant data",
-      method: "Use owned files/prompts only. Confirm whether tool calls require scoped identity and human approval for high-impact actions."
+      boundary: `untrusted ${primaryObject} content x tool authority x tenant data`,
+      method: `Use owned files/prompts around ${primaryRoute} only. Confirm whether tool calls require scoped identity and human approval for high-impact actions.`
     });
   }
 
   if (paths.length || urls.length) {
     queue.push({
-      title: "Cluster discovered routes by parent object and retest nested identifiers.",
+      title: `Cluster discovered routes for ${primaryObject} and retest nested identifiers.`,
       bugClass: "nested BOLA",
-      boundary: "parent authorization x child object reference",
-      method: "Swap child IDs while keeping the parent ID stable, then swap parent IDs while keeping the child ID stable."
+      boundary: `${primaryObject} parent authorization x child object reference`,
+      method: `Use ${primaryRoute} as the seed. Swap child IDs while keeping the parent ID stable, then swap parent IDs while keeping the child ID stable.`
     });
   }
 

@@ -4,17 +4,20 @@ import { analyzeScope } from "../src/core/analyze.js";
 
 test("builds a useful control model from scope text", () => {
   const result = analyzeScope({
-    scopeText: "Roles: user, admin. Objects: workspace, invoice, API key. Routes: /api/workspaces/:id /api/invoices/:invoiceId/export.",
+    scopeText: "Roles: user, admin. Objects: workspace, invoice, API key. Routes: /api/workspaces/:id /api/invoices/:invoiceId/export. Authorization: owned accounts only. Out of scope: DoS.",
     notes: "Check GraphQL mutation, webhook replay, and AI agent memory."
   });
 
   assert.equal(result.model.roles.includes("admin"), true);
   assert.equal(result.model.objects.includes("invoice"), true);
+  assert.equal(result.model.objects.includes("workspace"), true);
+  assert.equal(result.model.objects.includes("user"), false);
   assert.equal(result.model.surfaces.includes("GraphQL"), true);
   assert.equal(result.intake.accepted, true);
   assert.equal(result.matrix.length > 0, true);
   assert.equal(result.queue.some((item) => item.bugClass.includes("LLM")), true);
   assert.match(result.reportMarkdown, /Authorization Matrix/);
+  assert.match(result.queue[0].title, /workspace|invoice|api key/i);
 });
 
 test("returns default high-signal plan when input is empty", () => {
@@ -38,6 +41,14 @@ test("rejects ambiguous user input instead of producing a plausible plan", () =>
   assert.match(result.reportMarkdown, /Add explicit authorization/);
 });
 
+test("rejects keyword stuffing that satisfies categories without real scope", () => {
+  const result = analyzeScope({ scopeText: "goal user file route authorized" });
+
+  assert.equal(result.intake.accepted, false);
+  assert.equal(result.matrix.length, 0);
+  assert.match(result.intake.errors.join(" "), /Missing route/);
+});
+
 test("rejects secret-like material in intake", () => {
   const result = analyzeScope({
     scopeText: "Roles: user. Objects: api key. Routes: /api/keys. Authorization: owned account. Review goal: check key handling. Token: rnd_abcdefghijklmnopqrstuvwxyz"
@@ -45,6 +56,36 @@ test("rejects secret-like material in intake", () => {
 
   assert.equal(result.intake.accepted, false);
   assert.match(result.intake.errors.join(" "), /Secret-like material/);
+});
+
+test("rejects common provider token shapes before plan generation", () => {
+  const examples = [
+    "AIzaSyD12345678901234567890123456789012345",
+    "glpat-1234567890abcdefghij",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signaturepart123",
+    "ya29.A0AfH6SM1234567890abcdef"
+  ];
+
+  for (const token of examples) {
+    const result = analyzeScope({
+      scopeText: `Roles: user. Objects: api key. Routes: /api/keys. Authorization: owned account only. Review goal: check key handling. Token: ${token}`
+    });
+
+    assert.equal(result.intake.accepted, false, token);
+    assert.match(result.intake.errors.join(" "), /Secret-like material|jwt/);
+  }
+});
+
+test("varies matrix boundary columns instead of using decorative constants", () => {
+  const result = analyzeScope({
+    scopeText: "Roles: user, billing admin, admin. Objects: invoice, file, api key, invite. Routes: /api/invoices/:id/export /api/files/:id. Authorization: owned objects only. Review goal: verify export and update boundaries."
+  });
+
+  assert.equal(result.intake.accepted, true);
+  assert.equal(new Set(result.matrix.map((row) => row.role)).size > 1, true);
+  assert.equal(new Set(result.matrix.map((row) => row.state)).size > 1, true);
+  assert.equal(new Set(result.matrix.map((row) => row.tenant)).size > 1, true);
+  assert.match(result.queue[0].title, /invoice/i);
 });
 
 test("limits untrusted text size", () => {
