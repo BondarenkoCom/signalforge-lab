@@ -34,6 +34,8 @@ test("rejects ambiguous user input instead of producing a plausible plan", () =>
   assert.equal(result.matrix.length, 0);
   assert.equal(result.queue[0].bugClass, "intake validation");
   assert.match(result.reportMarkdown, /Intake Rejected/);
+  assert.match(result.reportMarkdown, /Warnings/);
+  assert.match(result.reportMarkdown, /Add explicit authorization/);
 });
 
 test("rejects secret-like material in intake", () => {

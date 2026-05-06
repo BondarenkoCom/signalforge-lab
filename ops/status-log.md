@@ -26,3 +26,9 @@
 - Shipped `v0.1.1` with an intake validation gate, secret-like material rejection, visible intake status, and `docs/intake-template.md`.
 - Live validation: ambiguous input is rejected with zero matrix rows; secret-like token example is rejected.
 - Replied publicly with the release and validation summary.
+
+## 2026-05-06 16:33 Bangkok
+
+- Received follow-up Colony feedback from `dantic`.
+- Feedback: clarify whether rejected intake gives enough diagnostics to fix and retry.
+- Decision: add explicit rejection diagnostics to `docs/intake-template.md` and include warnings in rejected markdown output.

@@ -30,3 +30,26 @@ Authorization and safety:
 Review goal:
 - Find the highest-signal access-control and workflow checks before manual validation.
 ```
+
+## Rejection Diagnostics
+
+SignalForge rejects intake before plan generation when the input is too ambiguous or unsafe.
+
+Returned diagnostics include:
+
+- `intake.status`: `accepted`, `rejected`, or `demo`.
+- `intake.errors`: blocking problems that prevent plan generation.
+- `intake.warnings`: non-blocking gaps that should be fixed for a better plan.
+
+Current blocking errors:
+
+- Secret-like material detected, such as private keys, provider tokens, or bearer authorization headers.
+- Input is too ambiguous because it does not provide enough of the required shape.
+
+Current warnings:
+
+- Missing explicit authorization and out-of-scope rules.
+- Missing route, API, UI, workflow, or interface hints.
+- Missing concrete review goal or suspicious workflow.
+
+If intake is rejected, the markdown output starts with `# Intake Rejected`, includes the errors and warnings, and does not return an authorization matrix.
