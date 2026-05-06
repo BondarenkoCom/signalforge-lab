@@ -62,6 +62,24 @@ test("rejects route-only scope when auth, rate limits, and data sensitivity are 
   assert.match(result.intake.warnings.join(" "), /authentication|rate-limit|data sensitivity/i);
 });
 
+test("rejects route scope with missing role or tenant boundary details", () => {
+  const missingRole = analyzeScope({
+    scopeText: "Objects: invoice. Routes: /api/invoices/:id/export. Authentication: session cookie. Authorization: owned objects only. Data sensitivity: owned test data. Rate limits: manual testing only. Review goal: check invoice export."
+  });
+
+  assert.equal(missingRole.intake.accepted, false);
+  assert.match(missingRole.intake.errors.join(" "), /Missing role boundary details/);
+
+  const missingTenant = analyzeScope({
+    scopeText: "Roles: user, admin. Objects: invoice. Routes: /api/invoices/:id/export. Authentication: session cookie. Authorization: allowed testing. Data sensitivity: test data. Rate limits: manual testing only. Review goal: check invoice export."
+  });
+
+  assert.equal(missingTenant.intake.accepted, false);
+  assert.equal(missingTenant.matrix.length, 0);
+  assert.match(missingTenant.intake.errors.join(" "), /tenant or ownership boundary/);
+  assert.equal(missingTenant.intake.boundarySources.tenant, "missing");
+});
+
 test("rejects secret-like material in intake", () => {
   const result = analyzeScope({
     scopeText: "Roles: user. Objects: api key. Routes: /api/keys. Authentication: session cookie. Authorization: owned account. Data sensitivity: owned test data. Rate limits: manual testing only. Review goal: check key handling. Token: rnd_abcdefghijklmnopqrstuvwxyz"
@@ -104,6 +122,8 @@ test("varies matrix boundary columns instead of using decorative constants", () 
   });
 
   assert.equal(result.intake.accepted, true);
+  assert.equal(result.intake.boundarySources.role, "input");
+  assert.equal(result.intake.boundarySources.tenant, "input");
   assert.equal(new Set(result.matrix.map((row) => row.role)).size > 1, true);
   assert.equal(new Set(result.matrix.map((row) => row.state)).size > 1, true);
   assert.equal(new Set(result.matrix.map((row) => row.tenant)).size > 1, true);

@@ -189,7 +189,10 @@ function evaluateIntake(text, hasUserInput) {
   const hasRoleSection = /\broles?\s*:/i.test(text) || ROLE_HINTS.some(([, pattern]) => pattern.test(text));
   const hasObjectSection = /\bobjects?\s*:/i.test(text) || OBJECT_HINTS.some((item) => lower.includes(item));
   const hasRouteSection = /\b(routes?|surfaces?|interfaces?|workflows?)\s*:/i.test(text) || extractUrls(text).length > 0 || extractPaths(text).length > 0;
-  const hasSafetyBoundary = /\b(out of scope|safe[- ]?harbor|authorized|authorization|owned accounts?|owned objects?|rate limits?)\b/i.test(text);
+  const hasAuthorizationBoundary = /\b(safe[- ]?harbor|authorized|authorization|owned accounts?|owned objects?|permission|access control)\b/i.test(text);
+  const hasSafetyLimit = /\b(out of scope|rate limits?|throttle|manual testing|no brute force|dos|spam|social engineering|destructive|persistence)\b/i.test(text);
+  const hasSafetyBoundary = hasAuthorizationBoundary && hasSafetyLimit;
+  const hasTenantBoundaryDetail = /\b(tenant|org|organization|workspace|team|account|owned accounts?|owned objects?|same tenant|foreign tenant|cross-tenant)\b/i.test(text);
   const hasReviewGoal = /\b(goal|check|review|audit|triage|test|verify|validate|suspicious flows?)\b/i.test(text);
   const hasAuthDetail = /\b(authentication|auth method|session|cookie|oauth|sso|saml|jwt|bearer|api key|authorization|owned accounts?|owned objects?)\b/i.test(text);
   const hasRateLimitDetail = /\b(rate limits?|throttle|request limit|safe pace|manual testing|no brute force|no automation|normal manual)\b/i.test(text);
@@ -220,8 +223,16 @@ function evaluateIntake(text, hasUserInput) {
     errors.push("Missing concrete review goal or suspicious workflow.");
   }
 
-  if (!hasRoleSection && !hasObjectSection) {
-    errors.push("Missing roles or protected objects.");
+  if (!hasRoleSection) {
+    errors.push("Missing role boundary details.");
+  }
+
+  if (!hasObjectSection) {
+    errors.push("Missing protected objects.");
+  }
+
+  if (hasRouteSection && !hasTenantBoundaryDetail) {
+    errors.push("Missing tenant or ownership boundary details for the route/workflow.");
   }
 
   if (score < 4) {
@@ -235,6 +246,9 @@ function evaluateIntake(text, hasUserInput) {
   if (!hasSafetyBoundary) warnings.push("Add explicit authorization and out-of-scope rules.");
   if (!hasRouteSection) warnings.push("Add route, API, UI, workflow, or interface hints.");
   if (!hasReviewGoal) warnings.push("Add a concrete review goal or suspicious workflow.");
+  if (!hasRoleSection) warnings.push("Add role boundary details, such as user, owner, billing admin, support admin, service account, or anonymous.");
+  if (!hasObjectSection) warnings.push("Add protected objects, such as invoice, file, workspace, API key, invite, webhook, memory, or agent.");
+  if (hasRouteSection && !hasTenantBoundaryDetail) warnings.push("Add tenant or ownership boundary details, such as owned account, workspace, organization, same tenant, or foreign tenant.");
   if (hasRouteSection && !hasAuthDetail) warnings.push("Add authentication or authorization method details.");
   if (hasRouteSection && !hasRateLimitDetail) warnings.push("Add rate-limit or safe testing pace guidance.");
   if (hasRouteSection && !hasDataSensitivity) warnings.push("Add data sensitivity classification, such as sandbox, public, owned, confidential, or customer data.");
@@ -244,7 +258,12 @@ function evaluateIntake(text, hasUserInput) {
     status: errors.length === 0 ? "accepted" : "rejected",
     score,
     errors,
-    warnings
+    warnings,
+    boundarySources: {
+      role: hasRoleSection ? "input" : "missing",
+      tenant: hasTenantBoundaryDetail ? "input" : "missing",
+      matrix: errors.length === 0 ? "derived from accepted input roles, objects, routes, surfaces, actions, and ownership hints" : "not generated"
+    }
   };
 }
 
