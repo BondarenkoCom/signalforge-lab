@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: signalforge-lab
+    runtime: node
+    buildCommand: npm test
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: NODE_ENV
+        value: production

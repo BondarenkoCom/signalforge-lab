@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SignalForge</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="workspace" aria-label="SignalForge workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">SignalForge</p>
+            <h1>Scope to signal</h1>
+          </div>
+          <form id="lead-form" class="lead-form">
+            <input id="lead-contact" name="contact" autocomplete="email" placeholder="contact">
+            <button type="submit">Reserve</button>
+          </form>
+        </header>
+
+        <section class="grid">
+          <form id="analyze-form" class="panel input-panel">
+            <label for="scopeText">Scope and rules</label>
+            <textarea id="scopeText" name="scopeText" spellcheck="false" placeholder="authorized program scope, rules, endpoint notes, roles, object names"></textarea>
+
+            <label for="notes">Field notes</label>
+            <textarea id="notes" name="notes" spellcheck="false" placeholder="owned accounts, states, interfaces, odd behavior"></textarea>
+
+            <div class="actions">
+              <button type="submit">Forge</button>
+              <button type="button" id="sample-button" class="secondary">Sample</button>
+              <button type="button" id="clear-button" class="secondary">Clear</button>
+            </div>
+          </form>
+
+          <section class="panel output-panel" aria-live="polite">
+            <div class="tabs" role="tablist">
+              <button type="button" class="tab is-active" data-tab="queue">Queue</button>
+              <button type="button" class="tab" data-tab="matrix">Matrix</button>
+              <button type="button" class="tab" data-tab="report">Report</button>
+            </div>
+
+            <div id="summary" class="summary"></div>
+            <div id="queue" class="tab-view is-active"></div>
+            <div id="matrix" class="tab-view"></div>
+            <pre id="report" class="tab-view report"></pre>
+          </section>
+        </section>
+      </section>
+    </main>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>
