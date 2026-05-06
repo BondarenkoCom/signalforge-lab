@@ -1,5 +1,7 @@
 # SignalForge
 
+[![CI](https://github.com/BondarenkoCom/signalforge-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/BondarenkoCom/signalforge-lab/actions/workflows/ci.yml)
+
 Local experiment workspace for a narrow revenue probe.
 
 Live URL:
