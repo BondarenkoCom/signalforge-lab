@@ -28,6 +28,12 @@
 
         <section class="grid">
           <form id="analyze-form" class="panel input-panel">
+            <div class="profiles" aria-label="Review profiles">
+              <button type="button" class="profile is-active" data-profile="api">API</button>
+              <button type="button" class="profile" data-profile="agent">Agent</button>
+              <button type="button" class="profile" data-profile="billing">Billing</button>
+            </div>
+
             <label for="scopeText">Scope and rules</label>
             <textarea id="scopeText" name="scopeText" spellcheck="false" placeholder="authorized program scope, rules, endpoint notes, roles, object names"></textarea>
 

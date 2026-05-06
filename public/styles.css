@@ -44,7 +44,8 @@ button {
 }
 
 button.secondary,
-.tab {
+.tab,
+.profile {
   border-color: var(--line);
   background: var(--panel-2);
   color: var(--text);
@@ -147,7 +148,8 @@ h1 {
 }
 
 .actions,
-.tabs {
+.tabs,
+.profiles {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -162,6 +164,11 @@ h1 {
 .tab.is-active {
   border-color: var(--blue);
   color: var(--blue);
+}
+
+.profile.is-active {
+  border-color: var(--yellow);
+  color: var(--yellow);
 }
 
 .summary {

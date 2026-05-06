@@ -37,6 +37,17 @@ body:
     validations:
       required: true
   - type: dropdown
+    id: pilot
+    attributes:
+      label: Pilot size
+      options:
+        - Free sanity check
+        - Paid quick triage
+        - Paid review plan
+        - Custom
+    validations:
+      required: true
+  - type: dropdown
     id: urgency
     attributes:
       label: Urgency

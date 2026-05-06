@@ -13,15 +13,37 @@ const downloadButton = document.querySelector("#download-button");
 
 let lastResult = null;
 
-const sample = {
-  scopeText: [
-    "Program allows testing own accounts only. Out of scope: DoS, spam, social engineering.",
-    "Roles: anonymous, user, workspace owner, support admin.",
-    "Objects: user, workspace, project, file, invoice, invite, webhook, api key, AI agent memory.",
-    "Routes: /api/workspaces/:workspaceId/projects/:projectId, /api/files/:fileId/download, /api/invoices/:invoiceId/export, /api/admin/users/:userId/impersonate, /graphql."
-  ].join("\n"),
-  notes: "Suspicious flows: export generation, invite resend, webhook replay, PATCH workspace settings, agent tool calls from retrieved documents."
+const profiles = {
+  api: {
+    scopeText: [
+      "Program allows testing own accounts only. Out of scope: DoS, spam, social engineering.",
+      "Roles: anonymous, user, workspace owner, support admin.",
+      "Objects: user, workspace, project, file, invoice, invite, webhook, api key.",
+      "Routes: /api/workspaces/:workspaceId/projects/:projectId, /api/files/:fileId/download, /api/invoices/:invoiceId/export, /api/admin/users/:userId/impersonate, /graphql."
+    ].join("\n"),
+    notes: "Suspicious flows: export generation, invite resend, webhook replay, PATCH workspace settings, bulk update arrays, archived objects."
+  },
+  agent: {
+    scopeText: [
+      "Program allows testing owned prompts, owned files, and owned connected tools only.",
+      "Roles: user, workspace owner, service account, admin.",
+      "Objects: agent, memory, embedding, document, message, webhook, api key, tool.",
+      "Routes: /api/agents/:agentId/messages, /api/tools/:toolId/run, /api/files/:fileId/preview, /api/memory/search."
+    ].join("\n"),
+    notes: "Suspicious flows: retrieved content steering tools, cross-user memory, tool identity scope, file preview output handling, replayed tool calls."
+  },
+  billing: {
+    scopeText: [
+      "Program allows testing owned customer accounts and sandbox billing objects only.",
+      "Roles: user, team owner, billing admin, support admin.",
+      "Objects: invoice, subscription, payment, coupon, export, report, organization.",
+      "Routes: /api/billing/invoices/:invoiceId, /api/billing/export, /api/subscriptions/:subscriptionId, /api/refunds/:paymentId."
+    ].join("\n"),
+    notes: "Suspicious flows: invoice export, coupon mutation, plan downgrade/upgrade state, refund helpers, support-only actions, stale download URLs."
+  }
 };
+
+let activeProfile = "api";
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -133,12 +155,21 @@ leadForm.addEventListener("submit", async (event) => {
   }, 1200);
 });
 
-sampleButton.addEventListener("click", () => {
-  scopeText.value = sample.scopeText;
-  notes.value = sample.notes;
-  analyze(sample).catch((error) => {
+function loadProfile(name) {
+  const profile = profiles[name] || profiles.api;
+  activeProfile = name;
+  scopeText.value = profile.scopeText;
+  notes.value = profile.notes;
+  document.querySelectorAll(".profile").forEach((item) => {
+    item.classList.toggle("is-active", item.dataset.profile === name);
+  });
+  analyze(profile).catch((error) => {
     summary.innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
   });
+}
+
+sampleButton.addEventListener("click", () => {
+  loadProfile(activeProfile);
 });
 
 clearButton.addEventListener("click", () => {
@@ -185,6 +216,10 @@ document.querySelectorAll(".tab").forEach((tab) => {
     tab.classList.add("is-active");
     document.querySelector(`#${tab.dataset.tab}`).classList.add("is-active");
   });
+});
+
+document.querySelectorAll(".profile").forEach((profile) => {
+  profile.addEventListener("click", () => loadProfile(profile.dataset.profile));
 });
 
 analyze({ scopeText: "", notes: "" }).catch(() => {});
