@@ -8,6 +8,7 @@ body:
     attributes:
       value: |
         Use only assets you own or are explicitly authorized to test.
+        Do not include secrets, private tokens, confidential program details, third-party personal data, or exploit instructions.
   - type: input
     id: contact
     attributes:
@@ -20,7 +21,7 @@ body:
     id: scope
     attributes:
       label: Program scope
-      description: Assets, roles, rules, out-of-scope items, and safe-harbor notes.
+      description: Public-safe assets, roles, rules, out-of-scope items, and safe-harbor notes. Keep private details for a separate channel after acceptance.
       placeholder: |
         Assets:
         Roles:
@@ -48,6 +49,18 @@ body:
     validations:
       required: true
   - type: dropdown
+    id: payment
+    attributes:
+      label: Payment rail after acceptance
+      description: No payment is requested until authorization, scope, and deliverable are accepted.
+      options:
+        - Not set yet
+        - Invoice after scope accepted
+        - Crypto after scope accepted
+        - Other after scope accepted
+    validations:
+      required: true
+  - type: dropdown
     id: urgency
     attributes:
       label: Urgency
@@ -58,3 +71,10 @@ body:
         - exploratory
     validations:
       required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Public safety confirmation
+      options:
+        - label: I confirm this request is authorized and contains no secrets or confidential target details.
+          required: true

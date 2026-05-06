@@ -1,5 +1,4 @@
 const form = document.querySelector("#analyze-form");
-const leadForm = document.querySelector("#lead-form");
 const scopeText = document.querySelector("#scopeText");
 const notes = document.querySelector("#notes");
 const summary = document.querySelector("#summary");
@@ -131,25 +130,6 @@ form.addEventListener("submit", async (event) => {
   } catch (error) {
     summary.innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
   }
-});
-
-leadForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const contact = new FormData(leadForm).get("contact");
-  if (!contact) return;
-
-  const button = leadForm.querySelector("button");
-  const original = button.textContent;
-  button.textContent = "Opening";
-  button.disabled = true;
-
-  const title = encodeURIComponent(`Review request: ${String(contact).slice(0, 64)}`);
-  window.location.href = `https://github.com/BondarenkoCom/signalforge-lab/issues/new?template=review-request.yml&title=${title}`;
-
-  setTimeout(() => {
-    button.textContent = original;
-    button.disabled = false;
-  }, 1200);
 });
 
 function loadProfile(name) {

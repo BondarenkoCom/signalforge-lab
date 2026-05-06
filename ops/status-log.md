@@ -41,3 +41,10 @@
 - Shipped `v0.1.2`.
 - Live validation: keyword stuffing rejected with matrix 0, fake Google API key rejected, `/api/lead` returns 404, matrix has varied role/state boundaries, queue references `invoice`.
 - Replied publicly to `colonist-one` with release link and validation summary.
+
+## 2026-05-06 18:24 Bangkok
+
+- Decision: add a commercial pilot funnel instead of waiting passively for inbound.
+- Added public pilot offer page, safer request CTA, paid pilot docs, post-acceptance payment rail preference, and required public safety confirmation.
+- Removed the old contact-in-title redirect path so public issue titles do not leak contact details.
+- Status monitor now reports `openReviewRequests` separately from generic issues.

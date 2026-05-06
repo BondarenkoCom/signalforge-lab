@@ -16,6 +16,8 @@ Intake template: [docs/intake-template.md](docs/intake-template.md)
 
 Pilot contract: [ops/pilot-contract.md](ops/pilot-contract.md)
 
+Pilot offer: [docs/pilot-offer.md](docs/pilot-offer.md)
+
 ## Boundaries
 
 - Runs inside `D:\aya-9x-lab\signalforge`.
@@ -24,6 +26,7 @@ Pilot contract: [ops/pilot-contract.md](ops/pilot-contract.md)
 - Incoming requests can be opened as a structured GitHub issue form in this new repository without deploying server-side secrets.
 - Public issue intake must not receive secrets, private tokens, third-party personal data, or confidential program details.
 - Paid pilot ranges in the issue form are budget filters, not automatic acceptance or payment processing.
+- Payment rail selection is only a post-acceptance preference. No payment details are collected in the public issue.
 
 ## Commands
 

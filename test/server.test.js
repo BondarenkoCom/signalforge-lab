@@ -58,6 +58,11 @@ test("serves text metadata with explicit content types", async () => {
   const baseUrl = await listen(server);
 
   try {
+    const pilot = await fetch(`${baseUrl}/pilot.html`);
+    assert.equal(pilot.status, 200);
+    assert.match(pilot.headers.get("content-type"), /text\/html/);
+    assert.match(await pilot.text(), /Pilot offer/);
+
     const privacy = await fetch(`${baseUrl}/privacy.txt`);
     assert.equal(privacy.status, 200);
     assert.match(privacy.headers.get("content-type"), /text\/plain/);

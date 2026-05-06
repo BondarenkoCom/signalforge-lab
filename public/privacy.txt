@@ -4,4 +4,6 @@ SignalForge privacy note
 
 The Request flow opens a structured GitHub issue form. GitHub issues are public unless the repository owner changes visibility or handles the conversation elsewhere.
 
+The pilot request link does not put contact details into the URL title. Put only public-safe contact and scope details into the issue form.
+
 Do not submit secrets, private tokens, third-party personal data, or confidential program details.

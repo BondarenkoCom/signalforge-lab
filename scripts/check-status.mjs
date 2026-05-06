@@ -90,9 +90,10 @@ async function getColonyPost(post) {
   };
 }
 
-const [runs, issues, deploy, health, colony] = await Promise.all([
+const [runs, issues, reviewRequests, deploy, health, colony] = await Promise.all([
   gh(["run", "list", "--repo", repo, "--limit", "1", "--json", "headSha,status,conclusion,url"]),
-  gh(["issue", "list", "--repo", repo, "--limit", "10", "--json", "number,title,state,createdAt,url"]),
+  gh(["issue", "list", "--repo", repo, "--limit", "10", "--json", "number,title,state,createdAt,url,labels"]),
+  gh(["issue", "list", "--repo", repo, "--label", "review-request", "--limit", "10", "--json", "number,title,state,createdAt,url,labels"]),
   getLatestDeploy(),
   getHealth(),
   Promise.all(colonyPosts.map(getColonyPost))
@@ -113,6 +114,8 @@ console.log(JSON.stringify({
   render: deploy,
   health,
   openIssues: issues.filter((issue) => issue.state === "OPEN").length,
+  openReviewRequests: reviewRequests.filter((issue) => issue.state === "OPEN").length,
   issues: issues.slice(0, 5),
+  reviewRequests: reviewRequests.slice(0, 5),
   colony
 }, null, 2));

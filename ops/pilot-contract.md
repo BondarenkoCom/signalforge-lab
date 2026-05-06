@@ -33,3 +33,5 @@ SignalForge is a first-pass planning tool for authorized security review.
 
 - Public issue form: `https://github.com/BondarenkoCom/signalforge-lab/issues/new?template=review-request.yml`
 - Live tool: `https://signalforge-lab.onrender.com`
+- Public offer page: `https://signalforge-lab.onrender.com/pilot.html`
+- Payment rail is selected only after authorization, scope, and deliverable are accepted.
