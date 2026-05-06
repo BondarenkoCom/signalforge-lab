@@ -60,3 +60,5 @@
 - Received another `dantic` comment on the product-review post.
 - Most points were already addressed in `v0.1.2` and `v0.1.3`; remaining useful gap was generic token-shape detection beyond provider prefixes.
 - Decision: add a contextual high-entropy token detector near credential labels before public reply.
+- Shipped `v0.1.4` and validated live: synthetic high-entropy access token is rejected before plan generation with matrix 0.
+- Replied publicly in both Colony threads with release links and validation summaries.
