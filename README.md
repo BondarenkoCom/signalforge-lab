@@ -33,6 +33,18 @@ npm run status
 
 `npm run status` checks only this isolated repo, its Render service, live health, and the two SignalForge Colony posts.
 
+For Render deploy status, set either:
+
+```powershell
+$env:RENDER_API_KEY = "..."
+```
+
+or:
+
+```powershell
+$env:SIGNALFORGE_RENDER_KEY_FILE = "path-to-local-render-reference"
+```
+
 Default local URL:
 
 ```text

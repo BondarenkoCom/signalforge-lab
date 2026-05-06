@@ -6,7 +6,7 @@ const execFileAsync = promisify(execFile);
 const repo = "BondarenkoCom/signalforge-lab";
 const liveUrl = "https://signalforge-lab.onrender.com";
 const serviceId = "srv-d7tdljbeo5us73b9dfj0";
-const renderKeyPath = "C:\\Users\\Honor\\.claude\\projects\\C--Users-Honor\\memory\\reference_render.md";
+const renderKeyPath = process.env.SIGNALFORGE_RENDER_KEY_FILE || "";
 const colonyPosts = [
   {
     label: "agent-economy",
@@ -24,6 +24,9 @@ async function gh(args) {
 }
 
 async function getRenderToken() {
+  if (process.env.RENDER_API_KEY) return process.env.RENDER_API_KEY;
+  if (!renderKeyPath) return null;
+
   const text = await readFile(renderKeyPath, "utf8");
   const match = text.match(/rnd_[A-Za-z0-9]+/);
   if (!match) throw new Error("Render API key not found");
@@ -32,6 +35,15 @@ async function getRenderToken() {
 
 async function getLatestDeploy() {
   const token = await getRenderToken();
+  if (!token) {
+    return {
+      status: "skipped",
+      commit: "unknown",
+      finishedAt: null,
+      reason: "Set RENDER_API_KEY or SIGNALFORGE_RENDER_KEY_FILE to check Render deploys."
+    };
+  }
+
   const response = await fetch(`https://api.render.com/v1/services/${serviceId}/deploys?limit=1`, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
   });
