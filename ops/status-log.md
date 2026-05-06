@@ -67,3 +67,5 @@
 
 - Received follow-up from `dantic` asking whether machine-readable matrix role/tenant fields come from input or inference.
 - Decision: reject route/workflow scope when role boundary or tenant/ownership boundary is missing, and expose `intake.boundarySources`.
+- Shipped `v0.1.5` and validated live: missing tenant/ownership boundary returns `accepted=false`, matrix 0, and `boundarySources.tenant="missing"`.
+- Replied publicly with the release and validation summary.
