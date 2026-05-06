@@ -135,19 +135,7 @@ leadForm.addEventListener("submit", async (event) => {
   button.disabled = true;
 
   const title = encodeURIComponent(`Review request: ${String(contact).slice(0, 64)}`);
-  const body = encodeURIComponent([
-    `Contact: ${contact}`,
-    "",
-    "Scope:",
-    scopeText.value || "TBD",
-    "",
-    "Goal:",
-    notes.value || "TBD",
-    "",
-    "Plan:",
-    lastResult?.reportMarkdown || "TBD"
-  ].join("\n"));
-  window.location.href = `https://github.com/BondarenkoCom/signalforge-lab/issues/new?title=${title}&body=${body}`;
+  window.location.href = `https://github.com/BondarenkoCom/signalforge-lab/issues/new?template=review-request.yml&title=${title}`;
 
   setTimeout(() => {
     button.textContent = original;
