@@ -23,6 +23,7 @@ https://signalforge-lab.onrender.com
 ```powershell
 npm test
 npm start
+npm run status
 ```
 
 Default local URL:

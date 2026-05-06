@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
+    "status": "node scripts/check-status.mjs",
     "test": "node --test test/*.test.js"
   },
   "engines": {
