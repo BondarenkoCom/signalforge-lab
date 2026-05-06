@@ -23,9 +23,11 @@ Routes or surfaces:
 
 Authorization and safety:
 - owned accounts only
+- authentication: session cookie and workspace role checks
 - owned objects only
 - out of scope: DoS, spam, social engineering, destructive actions, persistence
 - rate limits: normal manual testing only
+- data sensitivity: sandbox or owned test data only
 
 Review goal:
 - Find the highest-signal access-control and workflow checks before manual validation.
@@ -48,6 +50,7 @@ Current blocking errors:
 - Missing explicit authorization and out-of-scope rules.
 - Missing concrete review goal or suspicious workflow.
 - Missing roles or protected objects.
+- Route or workflow is present, but authentication method, rate-limit guidance, and data sensitivity are all unspecified.
 - Input is too ambiguous because it does not provide enough of the required shape.
 
 Current warnings:
@@ -55,5 +58,10 @@ Current warnings:
 - Missing explicit authorization and out-of-scope rules.
 - Missing route, API, UI, workflow, or interface hints.
 - Missing concrete review goal or suspicious workflow.
+- Missing authentication or authorization method details.
+- Missing rate-limit or safe testing pace guidance.
+- Missing data sensitivity classification, such as sandbox, public, owned, confidential, or customer data.
 
 If intake is rejected, the markdown output starts with `# Intake Rejected`, includes the errors and warnings, and does not return an authorization matrix.
+
+For downstream agents, `/api/analyze` returns `formatVersion`, `matrixSchema`, and a machine-readable `matrix[]` array with `priority`, `interface`, `object`, `action`, `role`, `state`, and `tenant` fields.

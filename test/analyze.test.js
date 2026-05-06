@@ -4,10 +4,12 @@ import { analyzeScope } from "../src/core/analyze.js";
 
 test("builds a useful control model from scope text", () => {
   const result = analyzeScope({
-    scopeText: "Roles: user, admin. Objects: workspace, invoice, API key. Routes: /api/workspaces/:id /api/invoices/:invoiceId/export. Authorization: owned accounts only. Out of scope: DoS.",
+    scopeText: "Roles: user, admin. Objects: workspace, invoice, API key. Routes: /api/workspaces/:id /api/invoices/:invoiceId/export. Authentication: session cookie. Authorization: owned accounts only. Data sensitivity: owned test data. Out of scope: DoS. Rate limits: manual testing only.",
     notes: "Check GraphQL mutation, webhook replay, and AI agent memory."
   });
 
+  assert.equal(result.formatVersion, "signalforge.analysis.v1");
+  assert.deepEqual(result.matrixSchema.itemFields, ["priority", "interface", "object", "action", "role", "state", "tenant"]);
   assert.equal(result.model.roles.includes("admin"), true);
   assert.equal(result.model.objects.includes("invoice"), true);
   assert.equal(result.model.objects.includes("workspace"), true);
@@ -49,9 +51,20 @@ test("rejects keyword stuffing that satisfies categories without real scope", ()
   assert.match(result.intake.errors.join(" "), /Missing route/);
 });
 
+test("rejects route-only scope when auth, rate limits, and data sensitivity are absent", () => {
+  const result = analyzeScope({
+    scopeText: "Roles: user. Objects: invoice. Routes: /api/invoices/:id/export. Review goal: check invoice export."
+  });
+
+  assert.equal(result.intake.accepted, false);
+  assert.equal(result.matrix.length, 0);
+  assert.match(result.intake.errors.join(" "), /authentication method, rate-limit guidance, and data sensitivity/);
+  assert.match(result.intake.warnings.join(" "), /authentication|rate-limit|data sensitivity/i);
+});
+
 test("rejects secret-like material in intake", () => {
   const result = analyzeScope({
-    scopeText: "Roles: user. Objects: api key. Routes: /api/keys. Authorization: owned account. Review goal: check key handling. Token: rnd_abcdefghijklmnopqrstuvwxyz"
+    scopeText: "Roles: user. Objects: api key. Routes: /api/keys. Authentication: session cookie. Authorization: owned account. Data sensitivity: owned test data. Rate limits: manual testing only. Review goal: check key handling. Token: rnd_abcdefghijklmnopqrstuvwxyz"
   });
 
   assert.equal(result.intake.accepted, false);
@@ -68,7 +81,7 @@ test("rejects common provider token shapes before plan generation", () => {
 
   for (const token of examples) {
     const result = analyzeScope({
-      scopeText: `Roles: user. Objects: api key. Routes: /api/keys. Authorization: owned account only. Review goal: check key handling. Token: ${token}`
+      scopeText: `Roles: user. Objects: api key. Routes: /api/keys. Authentication: session cookie. Authorization: owned account only. Data sensitivity: owned test data. Rate limits: manual testing only. Review goal: check key handling. Token: ${token}`
     });
 
     assert.equal(result.intake.accepted, false, token);
@@ -78,7 +91,7 @@ test("rejects common provider token shapes before plan generation", () => {
 
 test("varies matrix boundary columns instead of using decorative constants", () => {
   const result = analyzeScope({
-    scopeText: "Roles: user, billing admin, admin. Objects: invoice, file, api key, invite. Routes: /api/invoices/:id/export /api/files/:id. Authorization: owned objects only. Review goal: verify export and update boundaries."
+    scopeText: "Roles: user, billing admin, admin. Objects: invoice, file, api key, invite. Routes: /api/invoices/:id/export /api/files/:id. Authentication: session cookie. Authorization: owned objects only. Data sensitivity: owned test data. Rate limits: manual testing only. Review goal: verify export and update boundaries."
   });
 
   assert.equal(result.intake.accepted, true);

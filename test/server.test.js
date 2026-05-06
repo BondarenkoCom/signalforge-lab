@@ -22,11 +22,12 @@ test("serves health and analysis API", async () => {
     const analysisResponse = await fetch(`${baseUrl}/api/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scopeText: "Roles: admin, user. Objects: invoice. Routes: /api/invoices/:id/export. Authorization: owned accounts only. Review goal: check invoice export." })
+      body: JSON.stringify({ scopeText: "Roles: admin, user. Objects: invoice. Routes: /api/invoices/:id/export. Authentication: session cookie. Authorization: owned accounts only. Data sensitivity: owned test data. Rate limits: manual testing only. Review goal: check invoice export." })
     });
     const analysis = await analysisResponse.json();
 
     assert.equal(analysisResponse.status, 200);
+    assert.equal(analysis.formatVersion, "signalforge.analysis.v1");
     assert.equal(analysis.model.objects.includes("invoice"), true);
     assert.equal(analysis.matrix.length > 0, true);
     assert.match(analysis.reportMarkdown, /SignalForge Review Plan/);

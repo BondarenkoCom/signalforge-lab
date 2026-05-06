@@ -68,6 +68,13 @@ const SECRET_PATTERNS = [
   ["authorization header", /\bauthorization\s*:\s*bearer\s+[A-Za-z0-9._-]{12,}/i]
 ];
 
+const MATRIX_SCHEMA = {
+  type: "array",
+  itemFields: ["priority", "interface", "object", "action", "role", "state", "tenant"],
+  priority: "P1-P5, higher means test earlier",
+  boundaryColumns: ["role", "state", "tenant"]
+};
+
 function cleanText(value, maxLength = 60000) {
   if (typeof value !== "string") return "";
   return value.replace(/\0/g, "").slice(0, maxLength).trim();
@@ -156,6 +163,9 @@ function evaluateIntake(text, hasUserInput) {
   const hasRouteSection = /\b(routes?|surfaces?|interfaces?|workflows?)\s*:/i.test(text) || extractUrls(text).length > 0 || extractPaths(text).length > 0;
   const hasSafetyBoundary = /\b(out of scope|safe[- ]?harbor|authorized|authorization|owned accounts?|owned objects?|rate limits?)\b/i.test(text);
   const hasReviewGoal = /\b(goal|check|review|audit|triage|test|verify|validate|suspicious flows?)\b/i.test(text);
+  const hasAuthDetail = /\b(authentication|auth method|session|cookie|oauth|sso|saml|jwt|bearer|api key|authorization|owned accounts?|owned objects?)\b/i.test(text);
+  const hasRateLimitDetail = /\b(rate limits?|throttle|request limit|safe pace|manual testing|no brute force|no automation|normal manual)\b/i.test(text);
+  const hasDataSensitivity = /\b(data sensitivity|sensitive data|personal data|pii|confidential|public data|sandbox|test data|owned data|third-party data|customer data)\b/i.test(text);
   const secretHit = SECRET_PATTERNS.find(([, pattern]) => pattern.test(text));
 
   if (secretHit) {
@@ -185,9 +195,16 @@ function evaluateIntake(text, hasUserInput) {
     errors.push("Input is too ambiguous. Provide roles or objects, routes or surfaces, authorization/safety rules, and a review goal.");
   }
 
+  if (hasRouteSection && !hasAuthDetail && !hasRateLimitDetail && !hasDataSensitivity) {
+    errors.push("Route or workflow is present, but authentication method, rate-limit guidance, and data sensitivity are all unspecified.");
+  }
+
   if (!hasSafetyBoundary) warnings.push("Add explicit authorization and out-of-scope rules.");
   if (!hasRouteSection) warnings.push("Add route, API, UI, workflow, or interface hints.");
   if (!hasReviewGoal) warnings.push("Add a concrete review goal or suspicious workflow.");
+  if (hasRouteSection && !hasAuthDetail) warnings.push("Add authentication or authorization method details.");
+  if (hasRouteSection && !hasRateLimitDetail) warnings.push("Add rate-limit or safe testing pace guidance.");
+  if (hasRouteSection && !hasDataSensitivity) warnings.push("Add data sensitivity classification, such as sandbox, public, owned, confidential, or customer data.");
 
   return {
     accepted: errors.length === 0,
@@ -459,6 +476,8 @@ export function analyzeScope(input = {}) {
   if (!intake.accepted) {
     const rejected = buildRejectedPlan(intake);
     return {
+      formatVersion: "signalforge.analysis.v1",
+      matrixSchema: MATRIX_SCHEMA,
       generatedAt: new Date().toISOString(),
       inputStats: {
         characters: source.length,
@@ -481,6 +500,8 @@ export function analyzeScope(input = {}) {
   const reportMarkdown = buildPlanMarkdown(model, matrix, queue, model.routes);
 
   return {
+    formatVersion: "signalforge.analysis.v1",
+    matrixSchema: MATRIX_SCHEMA,
     generatedAt: new Date().toISOString(),
     inputStats: {
       characters: source.length,

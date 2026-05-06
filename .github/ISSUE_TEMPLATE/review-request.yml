@@ -25,6 +25,8 @@ body:
       placeholder: |
         Assets:
         Roles:
+        Authentication:
+        Data sensitivity:
         Out of scope:
         Rate limits:
     validations:

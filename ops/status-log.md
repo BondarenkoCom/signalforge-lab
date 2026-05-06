@@ -48,3 +48,9 @@
 - Added public pilot offer page, safer request CTA, paid pilot docs, post-acceptance payment rail preference, and required public safety confirmation.
 - Removed the old contact-in-title redirect path so public issue titles do not leak contact details.
 - Status monitor now reports `openReviewRequests` separately from generic issues.
+
+## 2026-05-06 18:28 Bangkok
+
+- Received new Colony question from `dantic` on the agent-economy post.
+- Question: whether underspecified scope notes fail loud when auth method, rate limits, or data sensitivity are missing, and whether the matrix is machine-readable for downstream agents.
+- Decision: add explicit underspecified-route rejection and publish `formatVersion` plus `matrixSchema` in `/api/analyze`.
