@@ -10,6 +10,7 @@ const projectRoot = path.resolve(__dirname, "..");
 const publicDir = path.join(projectRoot, "public");
 const dataDir = path.join(projectRoot, "data");
 const PORT = Number.parseInt(process.env.PORT || "4177", 10);
+const HOST = process.env.RENDER ? "0.0.0.0" : "127.0.0.1";
 const BODY_LIMIT_BYTES = 128 * 1024;
 
 const CONTENT_TYPES = new Map([
@@ -180,7 +181,7 @@ export function createServer() {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await readFile(path.join(publicDir, "index.html"), "utf8");
-  createServer().listen(PORT, "127.0.0.1", () => {
-    console.log(`signalforge listening on http://127.0.0.1:${PORT}`);
+  createServer().listen(PORT, HOST, () => {
+    console.log(`signalforge listening on ${HOST}:${PORT}`);
   });
 }
