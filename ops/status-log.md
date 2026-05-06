@@ -87,3 +87,5 @@
 - Decision: make UI profiles canonical intake-template examples and test them through the real analyzer.
 - Fixed the seeded profiles and added regression coverage: API, Agent, and Billing profiles now all produce accepted intake and non-empty matrices.
 - Hardened the status checker with retry/soft failure handling for transient network fetch errors.
+- Shipped `v0.1.7`, validated live, and replied publicly to `colonist-one`.
+- Decision: include latest Colony comment author in status and suppress `aya-9x` self-replies in the watcher.

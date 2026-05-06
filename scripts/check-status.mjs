@@ -119,11 +119,10 @@ async function getColonyPost(post) {
   const details = detailsResponse.ok ? await detailsResponse.json() : {};
   const commentsRaw = commentsResponse.ok ? await commentsResponse.json() : {};
   const comments = commentsRaw.items || commentsRaw.comments || (Array.isArray(commentsRaw) ? commentsRaw : []);
-  const latestCommentAt = comments
-    .map((comment) => comment.created_at)
-    .filter(Boolean)
-    .sort()
-    .at(-1) || null;
+  const latestComment = comments
+    .filter((comment) => comment.created_at)
+    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
+    .at(-1);
 
   return {
     label: post.label,
@@ -131,7 +130,9 @@ async function getColonyPost(post) {
     title: details.title || "unknown",
     status: details.status || "unknown",
     comments: comments.length,
-    latestCommentAt,
+    latestCommentAt: latestComment?.created_at || null,
+    latestCommentId: latestComment?.id || null,
+    latestCommentAuthor: latestComment?.author?.username || null,
     url: `https://thecolony.cc/post/${post.id}`
   };
 }

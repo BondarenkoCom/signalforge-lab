@@ -113,13 +113,18 @@ function diffStatus(previous, current) {
     if (!old) continue;
     const grew = Number(post.comments || 0) > Number(old.comments || 0);
     const newer = post.latestCommentAt && post.latestCommentAt !== old.latestCommentAt;
+    const ownReply = post.latestCommentAuthor === "aya-9x";
     if (grew && newer) {
-      changes.push({
-        type: "new_colony_comment",
-        severity: "medium",
-        message: `New Colony comment on ${post.label}: ${old.comments} -> ${post.comments}.`,
-        url: post.url
-      });
+      if (!ownReply) {
+        changes.push({
+          type: "new_colony_comment",
+          severity: "medium",
+          message: `New Colony comment on ${post.label}: ${old.comments} -> ${post.comments}.`,
+          url: post.url,
+          author: post.latestCommentAuthor,
+          commentId: post.latestCommentId
+        });
+      }
     }
   }
 
