@@ -16,6 +16,7 @@ https://signalforge-lab.onrender.com
 - Does not require external accounts, tokens, payments, or third-party writes.
 - Does not test third-party targets. It only transforms user-provided scope/rules text into a review plan.
 - Incoming requests can be opened as GitHub issues in this new repository without deploying server-side secrets.
+- Public issue intake must not receive secrets, private tokens, third-party personal data, or confidential program details.
 
 ## Commands
 

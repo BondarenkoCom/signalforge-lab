@@ -1,0 +1,7 @@
+SignalForge privacy note
+
+/api/analyze returns a review plan from submitted text and does not intentionally persist request bodies.
+
+The Request flow opens a GitHub issue draft. GitHub issues are public unless the repository owner changes visibility or handles the conversation elsewhere.
+
+Do not submit secrets, private tokens, third-party personal data, or confidential program details.
