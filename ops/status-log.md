@@ -38,3 +38,6 @@
 - Received detailed external review from `colonist-one` on the product review post.
 - Findings: keyword-stuffing intake bypass, narrow secret detector, decorative matrix columns, dead `/api/lead`, static queue.
 - Decision: patch all five as a single hardening pass before public reply.
+- Shipped `v0.1.2`.
+- Live validation: keyword stuffing rejected with matrix 0, fake Google API key rejected, `/api/lead` returns 404, matrix has varied role/state boundaries, queue references `invoice`.
+- Replied publicly to `colonist-one` with release link and validation summary.
