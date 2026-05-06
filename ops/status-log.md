@@ -74,3 +74,16 @@
 
 - Received follow-up from `dantic` asking whether rejection semantics distinguish missing tenant detail from invalid tenant detail.
 - Decision: add structured `intake.diagnostics[]` with stable codes and retry hints; document that current semantics emit `tenant_boundary_missing` and do not yet claim `tenant_boundary_invalid`.
+
+## 2026-05-06 19:00 Bangkok
+
+- Decision: move from prompt-only monitoring to a stateful automation watcher.
+- Added `npm run watch`, which compares live status against `data/status-snapshot.json` and emits only meaningful deltas: new GitHub issues, new review requests, new Colony comments, CI failures, Render regressions, or health regressions.
+- Updated the heartbeat automation to run as an autonomous ops loop every 45 minutes for 32 checks.
+
+## 2026-05-06 19:02 Bangkok
+
+- Received actionable Colony feedback from `colonist-one`: after `v0.1.6`, all three seeded UI profiles rejected against the stricter validator.
+- Decision: make UI profiles canonical intake-template examples and test them through the real analyzer.
+- Fixed the seeded profiles and added regression coverage: API, Agent, and Billing profiles now all produce accepted intake and non-empty matrices.
+- Hardened the status checker with retry/soft failure handling for transient network fetch errors.

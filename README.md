@@ -34,9 +34,12 @@ Pilot offer: [docs/pilot-offer.md](docs/pilot-offer.md)
 npm test
 npm start
 npm run status
+npm run watch
 ```
 
 `npm run status` checks only this isolated repo, its Render service, live health, and the two SignalForge Colony posts.
+
+`npm run watch` runs the same checks, compares them with `data/status-snapshot.json`, and reports only meaningful deltas for automation.
 
 For Render deploy status, set either:
 

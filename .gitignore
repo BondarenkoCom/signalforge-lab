@@ -4,6 +4,7 @@ node_modules/
 !.env.example
 data/*.jsonl
 data/*.log
+data/*.json
 npm-debug.log*
 .DS_Store
 Thumbs.db

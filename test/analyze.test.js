@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { analyzeScope } from "../src/core/analyze.js";
+import { profiles } from "../public/profiles.js";
 
 test("builds a useful control model from scope text", () => {
   const result = analyzeScope({
@@ -133,6 +134,16 @@ test("varies matrix boundary columns instead of using decorative constants", () 
   assert.equal(new Set(result.matrix.map((row) => row.state)).size > 1, true);
   assert.equal(new Set(result.matrix.map((row) => row.tenant)).size > 1, true);
   assert.match(result.queue[0].title, /invoice/i);
+});
+
+test("accepts all seeded UI profiles", () => {
+  for (const [name, profile] of Object.entries(profiles)) {
+    const result = analyzeScope(profile);
+
+    assert.equal(result.intake.accepted, true, name);
+    assert.equal(result.matrix.length > 0, true, name);
+    assert.notEqual(result.intake.status, "rejected", name);
+  }
 });
 
 test("limits untrusted text size", () => {

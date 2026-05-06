@@ -23,6 +23,23 @@ async function gh(args) {
   return JSON.parse(stdout);
 }
 
+async function sleep(ms) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(url, options = {}, attempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await fetch(url, options);
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) await sleep(400 * attempt);
+    }
+  }
+  throw lastError;
+}
+
 async function getRenderToken() {
   if (process.env.RENDER_API_KEY) return process.env.RENDER_API_KEY;
   if (!renderKeyPath) return null;
@@ -44,9 +61,19 @@ async function getLatestDeploy() {
     };
   }
 
-  const response = await fetch(`https://api.render.com/v1/services/${serviceId}/deploys?limit=1`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
-  });
+  let response;
+  try {
+    response = await fetchWithRetry(`https://api.render.com/v1/services/${serviceId}/deploys?limit=1`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+    });
+  } catch (error) {
+    return {
+      status: "check_failed",
+      commit: "unknown",
+      finishedAt: null,
+      error: error.message
+    };
+  }
 
   if (!response.ok) throw new Error(`Render deploy check failed: ${response.status}`);
   const deploys = await response.json();
@@ -59,16 +86,35 @@ async function getLatestDeploy() {
 }
 
 async function getHealth() {
-  const response = await fetch(`${liveUrl}/health`, { cache: "no-store" });
-  const body = await response.json().catch(() => ({}));
-  return { status: response.status, ok: body.ok === true };
+  try {
+    const response = await fetchWithRetry(`${liveUrl}/health`, { cache: "no-store" });
+    const body = await response.json().catch(() => ({}));
+    return { status: response.status, ok: body.ok === true };
+  } catch (error) {
+    return { status: 0, ok: false, error: error.message };
+  }
 }
 
 async function getColonyPost(post) {
-  const [detailsResponse, commentsResponse] = await Promise.all([
-    fetch(`https://thecolony.cc/api/v1/posts/${post.id}`),
-    fetch(`https://thecolony.cc/api/v1/posts/${post.id}/comments`)
-  ]);
+  let detailsResponse;
+  let commentsResponse;
+  try {
+    [detailsResponse, commentsResponse] = await Promise.all([
+      fetchWithRetry(`https://thecolony.cc/api/v1/posts/${post.id}`),
+      fetchWithRetry(`https://thecolony.cc/api/v1/posts/${post.id}/comments`)
+    ]);
+  } catch (error) {
+    return {
+      label: post.label,
+      id: post.id,
+      title: "unknown",
+      status: "check_failed",
+      comments: 0,
+      latestCommentAt: null,
+      url: `https://thecolony.cc/post/${post.id}`,
+      error: error.message
+    };
+  }
 
   const details = detailsResponse.ok ? await detailsResponse.json() : {};
   const commentsRaw = commentsResponse.ok ? await commentsResponse.json() : {};
