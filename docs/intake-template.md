@@ -46,6 +46,7 @@ Returned diagnostics include:
 Current blocking errors:
 
 - Secret-like material detected, such as private keys, provider tokens, or bearer authorization headers.
+- Secret-like high-entropy token material near token, secret, credential, password, API key, or authorization labels.
 - Missing route, surface, interface, or workflow hints.
 - Missing explicit authorization and out-of-scope rules.
 - Missing concrete review goal or suspicious workflow.

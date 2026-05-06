@@ -75,6 +75,8 @@ const MATRIX_SCHEMA = {
   boundaryColumns: ["role", "state", "tenant"]
 };
 
+const TOKEN_CONTEXT_PATTERN = /\b(token|secret|credential|password|api[_ -]?key|access[_ -]?token|refresh[_ -]?token|authorization|bearer)\b/i;
+
 function cleanText(value, maxLength = 60000) {
   if (typeof value !== "string") return "";
   return value.replace(/\0/g, "").slice(0, maxLength).trim();
@@ -86,6 +88,32 @@ function unique(values) {
 
 function countMatches(text, regex) {
   return [...text.matchAll(regex)].length;
+}
+
+function shannonEntropy(value) {
+  if (!value) return 0;
+  const counts = new Map();
+  for (const char of value) counts.set(char, (counts.get(char) || 0) + 1);
+  return [...counts.values()].reduce((sum, count) => {
+    const probability = count / value.length;
+    return sum - probability * Math.log2(probability);
+  }, 0);
+}
+
+function findHighEntropyToken(text) {
+  const candidatePattern = /\b[A-Za-z0-9][A-Za-z0-9._-]{23,}\b/g;
+  for (const match of text.matchAll(candidatePattern)) {
+    const token = match[0];
+    const context = text.slice(Math.max(0, match.index - 48), match.index + token.length + 16);
+    const hasTokenContext = TOKEN_CONTEXT_PATTERN.test(context);
+    const hasMixedShape = /[A-Z]/.test(token) && /[a-z]/.test(token) && /[0-9]/.test(token);
+    const hasTokenSeparator = /[._-]/.test(token);
+
+    if (hasTokenContext && hasMixedShape && (hasTokenSeparator || token.length >= 32) && shannonEntropy(token) >= 3.7) {
+      return token.slice(0, 6);
+    }
+  }
+  return null;
 }
 
 function extractUrls(text) {
@@ -167,9 +195,14 @@ function evaluateIntake(text, hasUserInput) {
   const hasRateLimitDetail = /\b(rate limits?|throttle|request limit|safe pace|manual testing|no brute force|no automation|normal manual)\b/i.test(text);
   const hasDataSensitivity = /\b(data sensitivity|sensitive data|personal data|pii|confidential|public data|sandbox|test data|owned data|third-party data|customer data)\b/i.test(text);
   const secretHit = SECRET_PATTERNS.find(([, pattern]) => pattern.test(text));
+  const highEntropyToken = findHighEntropyToken(text);
 
   if (secretHit) {
     errors.push(`Secret-like material detected (${secretHit[0]}). Remove credentials before analysis.`);
+  }
+
+  if (highEntropyToken) {
+    errors.push(`Secret-like material detected (high-entropy token near "${highEntropyToken}..."). Remove credentials before analysis.`);
   }
 
   const score = [hasRoleSection, hasObjectSection, hasRouteSection, hasSafetyBoundary, hasReviewGoal]

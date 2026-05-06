@@ -89,6 +89,15 @@ test("rejects common provider token shapes before plan generation", () => {
   }
 });
 
+test("rejects high-entropy token-shaped values near credential labels", () => {
+  const result = analyzeScope({
+    scopeText: "Roles: user. Objects: api key. Routes: /api/keys. Authentication: session cookie. Authorization: owned account only. Data sensitivity: owned test data. Rate limits: manual testing only. Review goal: check key handling. Access token: Ab9xK2LmN8pQ4rT7vY1zC3dE6fG0hJ5kL8mP"
+  });
+
+  assert.equal(result.intake.accepted, false);
+  assert.match(result.intake.errors.join(" "), /high-entropy token/);
+});
+
 test("varies matrix boundary columns instead of using decorative constants", () => {
   const result = analyzeScope({
     scopeText: "Roles: user, billing admin, admin. Objects: invoice, file, api key, invite. Routes: /api/invoices/:id/export /api/files/:id. Authentication: session cookie. Authorization: owned objects only. Data sensitivity: owned test data. Rate limits: manual testing only. Review goal: verify export and update boundaries."
