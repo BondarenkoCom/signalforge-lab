@@ -233,6 +233,53 @@ function buildReportSkeleton(model, queue) {
   ].join("\n");
 }
 
+function buildPlanMarkdown(model, matrix, queue, routes) {
+  const lines = [
+    "# SignalForge Review Plan",
+    "",
+    "## Control Model",
+    "",
+    `- Roles: ${model.roles.join(", ")}`,
+    `- Objects: ${model.objects.slice(0, 12).join(", ")}`,
+    `- Actions: ${model.actions.join(", ")}`,
+    `- Surfaces: ${model.surfaces.join(", ")}`,
+    "",
+    "## Priority Queue",
+    ""
+  ];
+
+  queue.forEach((item, index) => {
+    lines.push(`${index + 1}. ${item.title}`);
+    lines.push(`   - Bug class: ${item.bugClass}`);
+    lines.push(`   - Boundary: ${item.boundary}`);
+    lines.push(`   - Method: ${item.method}`);
+  });
+
+  lines.push("", "## Authorization Matrix", "");
+  lines.push("| Priority | Interface | Object | Action | Role Boundary | State | Tenant |");
+  lines.push("| --- | --- | --- | --- | --- | --- | --- |");
+
+  matrix.forEach((row) => {
+    lines.push(`| P${row.priority} | ${row.interface} | ${row.object} | ${row.action} | ${row.role} | ${row.state} | ${row.tenant} |`);
+  });
+
+  if (routes.length) {
+    lines.push("", "## Route Hints", "");
+    routes.slice(0, 20).forEach((route) => lines.push(`- ${route}`));
+  }
+
+  lines.push(
+    "",
+    "## Safety Boundary",
+    "",
+    "- Use owned accounts and owned objects only.",
+    "- Stop before third-party data access, destructive actions, spam, persistence, or denial-of-service.",
+    "- A finding is reportable only after the broken security boundary is stated in one sentence and proven with the smallest safe diff."
+  );
+
+  return lines.join("\n");
+}
+
 export function analyzeScope(input = {}) {
   const scopeText = cleanText(input.scopeText);
   const notes = cleanText(input.notes, 20000);
@@ -259,6 +306,7 @@ export function analyzeScope(input = {}) {
   const matrix = buildMatrix(roles, objects, actions, surfaces);
   const queue = buildQueue(model, paths, urls);
   const reportSkeleton = buildReportSkeleton(model, queue);
+  const reportMarkdown = buildPlanMarkdown(model, matrix, queue, model.routes);
 
   return {
     generatedAt: new Date().toISOString(),
@@ -271,6 +319,7 @@ export function analyzeScope(input = {}) {
     model,
     matrix,
     queue,
-    reportSkeleton
+    reportSkeleton,
+    reportMarkdown
   };
 }

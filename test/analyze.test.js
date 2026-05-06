@@ -13,6 +13,7 @@ test("builds a useful control model from scope text", () => {
   assert.equal(result.model.surfaces.includes("GraphQL"), true);
   assert.equal(result.matrix.length > 0, true);
   assert.equal(result.queue.some((item) => item.bugClass.includes("LLM")), true);
+  assert.match(result.reportMarkdown, /Authorization Matrix/);
 });
 
 test("returns default high-signal plan when input is empty", () => {
@@ -21,6 +22,7 @@ test("returns default high-signal plan when input is empty", () => {
   assert.equal(result.model.roles.length >= 4, true);
   assert.equal(result.queue[0].bugClass, "BOLA");
   assert.match(result.reportSkeleton, /Broken Boundary/);
+  assert.match(result.reportMarkdown, /Safety Boundary/);
 });
 
 test("limits untrusted text size", () => {

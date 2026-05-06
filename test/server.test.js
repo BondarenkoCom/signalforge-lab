@@ -29,6 +29,7 @@ test("serves health and analysis API", async () => {
     assert.equal(analysisResponse.status, 200);
     assert.equal(analysis.model.objects.includes("invoice"), true);
     assert.equal(analysis.matrix.length > 0, true);
+    assert.match(analysis.reportMarkdown, /SignalForge Review Plan/);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

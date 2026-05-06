@@ -8,6 +8,10 @@ const matrix = document.querySelector("#matrix");
 const report = document.querySelector("#report");
 const sampleButton = document.querySelector("#sample-button");
 const clearButton = document.querySelector("#clear-button");
+const copyButton = document.querySelector("#copy-button");
+const downloadButton = document.querySelector("#download-button");
+
+let lastResult = null;
 
 const sample = {
   scopeText: [
@@ -82,10 +86,11 @@ async function analyze(payload) {
 
   if (!response.ok) throw new Error(`analysis failed: ${response.status}`);
   const data = await response.json();
+  lastResult = data;
   renderSummary(data);
   renderQueue(data);
   renderMatrix(data);
-  report.textContent = data.reportSkeleton;
+  report.textContent = data.reportMarkdown || data.reportSkeleton;
 }
 
 form.addEventListener("submit", async (event) => {
@@ -115,7 +120,10 @@ leadForm.addEventListener("submit", async (event) => {
     scopeText.value || "TBD",
     "",
     "Goal:",
-    notes.value || "TBD"
+    notes.value || "TBD",
+    "",
+    "Plan:",
+    lastResult?.reportMarkdown || "TBD"
   ].join("\n"));
   window.location.href = `https://github.com/BondarenkoCom/signalforge-lab/issues/new?title=${title}&body=${body}`;
 
@@ -140,6 +148,34 @@ clearButton.addEventListener("click", () => {
   queue.innerHTML = "";
   matrix.innerHTML = "";
   report.textContent = "";
+  lastResult = null;
+});
+
+copyButton.addEventListener("click", async () => {
+  const text = lastResult?.reportMarkdown || report.textContent;
+  if (!text) return;
+
+  const original = copyButton.textContent;
+  await navigator.clipboard.writeText(text);
+  copyButton.textContent = "Copied";
+  setTimeout(() => {
+    copyButton.textContent = original;
+  }, 1000);
+});
+
+downloadButton.addEventListener("click", () => {
+  const text = lastResult?.reportMarkdown || report.textContent;
+  if (!text) return;
+
+  const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "signalforge-review-plan.md";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 });
 
 document.querySelectorAll(".tab").forEach((tab) => {
