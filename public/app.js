@@ -104,21 +104,25 @@ leadForm.addEventListener("submit", async (event) => {
 
   const button = leadForm.querySelector("button");
   const original = button.textContent;
-  button.textContent = "Saved";
+  button.textContent = "Opening";
   button.disabled = true;
 
-  try {
-    await fetch("/api/lead", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contact, source: "web" })
-    });
-  } finally {
-    setTimeout(() => {
-      button.textContent = original;
-      button.disabled = false;
-    }, 1200);
-  }
+  const title = encodeURIComponent(`Review request: ${String(contact).slice(0, 64)}`);
+  const body = encodeURIComponent([
+    `Contact: ${contact}`,
+    "",
+    "Scope:",
+    scopeText.value || "TBD",
+    "",
+    "Goal:",
+    notes.value || "TBD"
+  ].join("\n"));
+  window.location.href = `https://github.com/BondarenkoCom/signalforge-lab/issues/new?title=${title}&body=${body}`;
+
+  setTimeout(() => {
+    button.textContent = original;
+    button.disabled = false;
+  }, 1200);
 });
 
 sampleButton.addEventListener("click", () => {

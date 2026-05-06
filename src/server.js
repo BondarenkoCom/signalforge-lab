@@ -12,6 +12,9 @@ const dataDir = path.join(projectRoot, "data");
 const PORT = Number.parseInt(process.env.PORT || "4177", 10);
 const HOST = process.env.RENDER ? "0.0.0.0" : "127.0.0.1";
 const BODY_LIMIT_BYTES = 128 * 1024;
+const RATE_WINDOW_MS = 60_000;
+const RATE_LIMIT = 45;
+const rateBuckets = new Map();
 
 const CONTENT_TYPES = new Map([
   [".html", "text/html; charset=utf-8"],
@@ -43,6 +46,36 @@ function sendText(res, status, text) {
     "X-Content-Type-Options": "nosniff"
   });
   res.end(text);
+}
+
+function getClientKey(req) {
+  const forwardedFor = req.headers["x-forwarded-for"];
+  const firstForwarded = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+  return (firstForwarded || req.socket.remoteAddress || "unknown").split(",")[0].trim();
+}
+
+function checkRateLimit(req, res) {
+  const key = getClientKey(req);
+  const now = Date.now();
+  const bucket = rateBuckets.get(key);
+
+  if (!bucket || bucket.resetAt <= now) {
+    rateBuckets.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+
+  bucket.count += 1;
+  if (bucket.count <= RATE_LIMIT) return true;
+
+  const retryAfter = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+  res.writeHead(429, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Retry-After": String(retryAfter),
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff"
+  });
+  res.end(JSON.stringify({ error: "rate_limited", retryAfter }));
+  return false;
 }
 
 function readBody(req) {
@@ -149,6 +182,8 @@ export function createServer() {
   return createHttpServer(async (req, res) => {
     try {
       const url = new URL(req.url || "/", "http://127.0.0.1");
+
+      if (!checkRateLimit(req, res)) return;
 
       if (req.method === "GET" && url.pathname === "/health") {
         sendJson(res, 200, { ok: true, service: "signalforge" });

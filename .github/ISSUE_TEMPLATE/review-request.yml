@@ -1,0 +1,49 @@
+name: Review request
+description: Request a focused authorized security review plan.
+title: "Review request: "
+labels:
+  - review-request
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use only assets you own or are explicitly authorized to test.
+  - type: input
+    id: contact
+    attributes:
+      label: Contact
+      description: Email, Telegram, Discord, or another way to reply.
+      placeholder: name@example.com
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Program scope
+      description: Assets, roles, rules, out-of-scope items, and safe-harbor notes.
+      placeholder: |
+        Assets:
+        Roles:
+        Out of scope:
+        Rate limits:
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What kind of signal do you need first?
+      placeholder: API auth matrix, LLM tool-use review, export/download checks, invite/share flow audit
+    validations:
+      required: true
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: Urgency
+      options:
+        - 24 hours
+        - 3 days
+        - 1 week
+        - exploratory
+    validations:
+      required: true

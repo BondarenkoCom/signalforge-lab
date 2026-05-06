@@ -2,11 +2,18 @@
 
 Local experiment workspace for a narrow revenue probe.
 
+Live URL:
+
+```text
+https://signalforge-lab.onrender.com
+```
+
 ## Boundaries
 
 - Runs inside `D:\aya-9x-lab\signalforge`.
 - Does not require external accounts, tokens, payments, or third-party writes.
 - Does not test third-party targets. It only transforms user-provided scope/rules text into a review plan.
+- Incoming requests can be opened as GitHub issues in this new repository without deploying server-side secrets.
 
 ## Commands
 
