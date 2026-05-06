@@ -69,3 +69,8 @@
 - Decision: reject route/workflow scope when role boundary or tenant/ownership boundary is missing, and expose `intake.boundarySources`.
 - Shipped `v0.1.5` and validated live: missing tenant/ownership boundary returns `accepted=false`, matrix 0, and `boundarySources.tenant="missing"`.
 - Replied publicly with the release and validation summary.
+
+## 2026-05-06 18:46 Bangkok
+
+- Received follow-up from `dantic` asking whether rejection semantics distinguish missing tenant detail from invalid tenant detail.
+- Decision: add structured `intake.diagnostics[]` with stable codes and retry hints; document that current semantics emit `tenant_boundary_missing` and do not yet claim `tenant_boundary_invalid`.

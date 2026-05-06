@@ -179,7 +179,20 @@ function evaluateIntake(text, hasUserInput) {
       status: "demo",
       score: 4,
       errors: [],
-      warnings: ["Demo plan generated from default scope. Add concrete roles, objects, routes, and safety rules before relying on it."]
+      warnings: ["Demo plan generated from default scope. Add concrete roles, objects, routes, and safety rules before relying on it."],
+      diagnostics: [
+        {
+          severity: "warning",
+          code: "demo_defaults",
+          message: "Demo plan generated from default scope. Add concrete roles, objects, routes, and safety rules before relying on it.",
+          retryHint: "retry_with_explicit_scope"
+        }
+      ],
+      boundarySources: {
+        role: "demo-default",
+        tenant: "demo-default",
+        matrix: "derived from demo defaults"
+      }
     };
   }
 
@@ -259,12 +272,53 @@ function evaluateIntake(text, hasUserInput) {
     score,
     errors,
     warnings,
+    diagnostics: buildDiagnostics(errors, warnings),
     boundarySources: {
       role: hasRoleSection ? "input" : "missing",
       tenant: hasTenantBoundaryDetail ? "input" : "missing",
       matrix: errors.length === 0 ? "derived from accepted input roles, objects, routes, surfaces, actions, and ownership hints" : "not generated"
     }
   };
+}
+
+function diagnosticCode(message, severity) {
+  if (/Secret-like material detected \(high-entropy token/i.test(message)) return "secret_high_entropy_token";
+  if (/Secret-like material detected/i.test(message)) return "secret_material";
+  if (/Missing route/i.test(message)) return "route_or_workflow_missing";
+  if (/Missing explicit authorization/i.test(message)) return "authorization_or_safety_missing";
+  if (/Missing concrete review goal/i.test(message)) return "review_goal_missing";
+  if (/Missing role boundary/i.test(message)) return "role_boundary_missing";
+  if (/Missing protected objects/i.test(message)) return "protected_objects_missing";
+  if (/tenant or ownership boundary/i.test(message)) return "tenant_boundary_missing";
+  if (/authentication method, rate-limit guidance, and data sensitivity/i.test(message)) return "route_contract_underspecified";
+  if (/too ambiguous/i.test(message)) return "intake_ambiguous";
+  if (/authentication or authorization method/i.test(message)) return "auth_detail_missing";
+  if (/rate-limit or safe testing pace/i.test(message)) return "rate_limit_missing";
+  if (/data sensitivity classification/i.test(message)) return "data_sensitivity_missing";
+  return `${severity}_unspecified`;
+}
+
+function retryHintFor(code) {
+  if (code.startsWith("secret_")) return "remove_secret_material";
+  if (code === "tenant_boundary_missing") return "retry_with_tenant_or_ownership_boundary";
+  if (code === "role_boundary_missing") return "retry_with_role_boundary";
+  if (code === "protected_objects_missing") return "retry_with_protected_objects";
+  if (code === "route_contract_underspecified") return "retry_with_auth_rate_and_data_details";
+  if (code.endsWith("_missing") || code === "intake_ambiguous") return "retry_with_corrected_input";
+  return "review_input";
+}
+
+function buildDiagnostics(errors, warnings) {
+  return [
+    ...errors.map((message) => {
+      const code = diagnosticCode(message, "error");
+      return { severity: "error", code, message, retryHint: retryHintFor(code) };
+    }),
+    ...warnings.map((message) => {
+      const code = diagnosticCode(message, "warning");
+      return { severity: "warning", code, message, retryHint: retryHintFor(code) };
+    })
+  ];
 }
 
 function buildRejectedPlan(intake) {

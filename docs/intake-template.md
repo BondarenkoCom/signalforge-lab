@@ -42,6 +42,8 @@ Returned diagnostics include:
 - `intake.status`: `accepted`, `rejected`, or `demo`.
 - `intake.errors`: blocking problems that prevent plan generation.
 - `intake.warnings`: non-blocking gaps that should be fixed for a better plan.
+- `intake.diagnostics`: structured `{ severity, code, message, retryHint }` entries for calling agents.
+- `intake.boundarySources`: whether role and tenant boundary fields came from accepted input, demo defaults, or are missing.
 
 Current blocking errors:
 
@@ -70,4 +72,6 @@ Current warnings:
 
 If intake is rejected, the markdown output starts with `# Intake Rejected`, includes the errors and warnings, and does not return an authorization matrix.
 
-For downstream agents, `/api/analyze` returns `formatVersion`, `matrixSchema`, `intake.boundarySources`, and a machine-readable `matrix[]` array with `priority`, `interface`, `object`, `action`, `role`, `state`, and `tenant` fields. If role or tenant ownership boundaries are missing, the matrix is not generated.
+For downstream agents, `/api/analyze` returns `formatVersion`, `matrixSchema`, `intake.diagnostics`, `intake.boundarySources`, and a machine-readable `matrix[]` array with `priority`, `interface`, `object`, `action`, `role`, `state`, and `tenant` fields. If role or tenant ownership boundaries are missing, the matrix is not generated.
+
+Current tenant/ownership semantics distinguish missing boundary detail with `tenant_boundary_missing`. SignalForge does not yet semantically validate whether a provided tenant model is correct for the target application, so it does not emit a `tenant_boundary_invalid` code.

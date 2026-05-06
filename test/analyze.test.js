@@ -78,6 +78,11 @@ test("rejects route scope with missing role or tenant boundary details", () => {
   assert.equal(missingTenant.matrix.length, 0);
   assert.match(missingTenant.intake.errors.join(" "), /tenant or ownership boundary/);
   assert.equal(missingTenant.intake.boundarySources.tenant, "missing");
+  assert.equal(missingTenant.intake.diagnostics.some((item) => item.code === "tenant_boundary_missing"), true);
+  assert.equal(
+    missingTenant.intake.diagnostics.find((item) => item.code === "tenant_boundary_missing").retryHint,
+    "retry_with_tenant_or_ownership_boundary"
+  );
 });
 
 test("rejects secret-like material in intake", () => {
